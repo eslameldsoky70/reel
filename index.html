@@ -1509,6 +1509,10 @@
       }
       .ae-cnl:hover{background:rgba(255,80,80,0.14);}
       .ae-div{height:1px;background:rgba(201,151,58,0.09);margin:12px 0;}
+      .ae-adv-card{
+        background:#070e09;border:1px solid rgba(255,255,255,0.07);
+        border-radius:10px;padding:12px 13px;margin-bottom:10px;
+      }
       .ae-notice{
         font-size:10px;color:rgba(255,255,255,0.25);text-align:center;
         margin-bottom:14px;line-height:1.7;
@@ -5876,7 +5880,16 @@
 
           // إعداد الـ export بنفس pipeline الأصلي
           const exportAyahsFiltered = timings.map(t => t.ayahN);
-          const buffers = verseDataArr.map(r => r.buf);
+          // تطبيق إعدادات Audio Editor على كل buffer
+          let rawBuffers = verseDataArr.map(r => r.buf);
+          if (window._aeSettings) {
+            xShow(0, rawBuffers.length, 'جارٍ تطبيق تأثيرات الصوت...');
+            rawBuffers = await Promise.all(rawBuffers.map((b,i) => {
+              xShow(i+1, rawBuffers.length, 'تأثيرات آية '+ arN(i+1));
+              return applyAEToBuffer(b, expCtx);
+            }));
+          }
+          const buffers = rawBuffers;
           _expTotalDur = buffers.reduce((s, b) => s + b.duration, 0);
           _expElapsedBefore = 0;
           _expAbort = false;
@@ -5916,6 +5929,74 @@
           setSbar('❌ ' + e.message, '#f47c7c');
           console.error('Custom audio export error:', e);
         }
+      }
+
+      /* ══ تطبيق إعدادات الـ Audio Editor على AudioBuffer ══ */
+      async function applyAEToBuffer(inputBuf, actx) {
+        const s = window._aeSettings;
+        if (!s) return inputBuf; // مفيش settings = الصوت أصلي
+
+        const SR  = inputBuf.sampleRate;
+        const nCh = inputBuf.numberOfChannels;
+        const len = inputBuf.length;
+        const off = new OfflineAudioContext(nCh, len, SR);
+
+        const src = off.createBufferSource();
+        src.buffer = inputBuf;
+        let node = src;
+
+        // Gain
+        const gn = off.createGain();
+        gn.gain.value = s.gain || 1;
+        node.connect(gn); node = gn;
+
+        // EQ
+        const EQ = [[60,'lowshelf'],[250,'peaking'],[1000,'peaking'],[4000,'peaking'],[12000,'highshelf']];
+        (s.eq || [0,0,0,0,0]).forEach((val, i) => {
+          const f = off.createBiquadFilter();
+          f.type = EQ[i][1]; f.frequency.value = EQ[i][0];
+          f.gain.value = val; f.Q.value = 1;
+          node.connect(f); node = f;
+        });
+
+        // Compressor
+        if (s.compress) {
+          const cp = off.createDynamicsCompressor();
+          cp.threshold.value = -24; cp.knee.value = 10; cp.ratio.value = 4;
+          cp.attack.value = 0.003; cp.release.value = 0.25;
+          node.connect(cp); node = cp;
+        }
+
+        // Echo + Reverb
+        const eOn = s.echoOn, rOn = s.revOn;
+        if (eOn || rOn) {
+          node.connect(off.destination); // dry
+          if (eOn) {
+            const dly = off.createDelay(3);
+            dly.delayTime.value = s.ed || 0.25;
+            const fb = off.createGain(); fb.gain.value = Math.min(s.ef || 0.3, 0.88);
+            const wt = off.createGain(); wt.gain.value = s.em || 0.3;
+            node.connect(dly); dly.connect(fb); fb.connect(dly);
+            dly.connect(wt); wt.connect(off.destination);
+          }
+          if (rOn) {
+            // IR للـ reverb
+            const irLen = Math.floor(SR * (s.rs || 1.5));
+            const ir = off.createBuffer(2, irLen, SR);
+            for (let ch = 0; ch < 2; ch++) {
+              const d = ir.getChannelData(ch);
+              for (let i = 0; i < irLen; i++) d[i] = (Math.random()*2-1) * Math.pow(1-i/irLen, 2.5);
+            }
+            const cv = off.createConvolver(); cv.buffer = ir;
+            const rw = off.createGain(); rw.gain.value = s.rm || 0.25;
+            node.connect(cv); cv.connect(rw); rw.connect(off.destination);
+          }
+        } else {
+          node.connect(off.destination);
+        }
+
+        src.start(0);
+        return await off.startRendering();
       }
 
       async function startExport() {
@@ -8661,8 +8742,8 @@
          CUSTOM AUDIO SECTION (CAS) — Global Scope
       ════════════════════════════════════════════════ */
       var _casAudio = new Audio();
-      var _casAudioUrl = null;
-      var _casAudioFile = null; // نحفظ الـ File object للتصدير
+      window._casAudioUrl = null;
+      window._casAudioFile = null; // نحفظ الـ File object للتصدير
 
       function casSetReciterName(val) {
         var elSh = document.getElementById('elSh');
@@ -8674,10 +8755,14 @@
       function casLoadAudio(input) {
         var file = input.files[0];
         if (!file) return;
-        if (_casAudioUrl) URL.revokeObjectURL(_casAudioUrl);
-        _casAudioUrl = URL.createObjectURL(file);
-        _casAudioFile = file; // حفظ الـ File نفسه
-        _casAudio.src = _casAudioUrl;
+        if (window._casAudioUrl) URL.revokeObjectURL(window._casAudioUrl);
+        window._casAudioUrl = URL.createObjectURL(file);
+        window._casAudioFile = file;
+        // نقرأ الـ ArrayBuffer ونخزنه مباشرة — للـ Audio Editor
+        var fr = new FileReader();
+        fr.onload = function(ev){ window._casAudioArrayBuffer = ev.target.result.slice(0); };
+        fr.readAsArrayBuffer(file);
+        _casAudio.src = window._casAudioUrl;
         _casAudio.load();
 
         document.getElementById('cas-empty').style.display = 'none';
@@ -8702,9 +8787,9 @@
 
       function casRemoveAudio() {
         _casAudio.pause();
-        if (_casAudioUrl) { URL.revokeObjectURL(_casAudioUrl); _casAudioUrl = null; }
+        if (window._casAudioUrl) { URL.revokeObjectURL(window._casAudioUrl); window._casAudioUrl = null; }
         _casAudio.src = '';
-        _casAudioFile = null;
+        window._casAudioFile = null;
         document.getElementById('casAudioInput').value = '';
         document.getElementById('cas-empty').style.display = '';
         document.getElementById('cas-loaded').style.display = 'none';
@@ -8936,13 +9021,7 @@
       </div>
       <div class="ae-body">
 
-        <div class="ae-notice" id="aeNotice">جاري تحميل الصوت...</div>
-
-        <!-- Waveform -->
-        <div class="ae-wave" id="aeWaveWrap" onclick="aeSeekWave(event)">
-          <canvas id="aeWaveCanvas"></canvas>
-          <div class="ae-wave-cur" id="aeWaveCur"></div>
-        </div>
+        <div class="ae-notice" id="aeNotice" style="display:none"></div>
 
         <!-- Player -->
         <div class="ae-player">
@@ -8953,16 +9032,16 @@
           <span class="ae-times" id="aeTimes">0:00 / 0:00</span>
         </div>
 
-        <!-- Compare toggle -->
+        <!-- Compare -->
         <div class="ae-cmp">
-          <span>مقارنة مع الصوت الأصلي</span>
+          <span>بدون تأثيرات</span>
           <label class="ae-sw">
             <input type="checkbox" id="aeCompare" onchange="aeSetCompare(this.checked)">
             <span class="ae-swt"></span>
           </label>
         </div>
 
-        <!-- Quick presets -->
+        <!-- Presets -->
         <span class="ae-ps-lbl">⚡ إعدادات سريعة</span>
         <div class="ae-ps">
           <button class="ae-p on" id="aePreset-natural" onclick="aePreset('natural',this)"><span>🌿</span>طبيعي</button>
@@ -8979,53 +9058,19 @@
           <button class="ae-tab"    onclick="aeSwitchTab('adv',this)">متقدم</button>
         </div>
 
-        <!-- Panel: Echo -->
         <div class="ae-pnl on" id="aePnl-echo">
-          <div class="ae-trow">
-            <span>تفعيل الصدى</span>
-            <label class="ae-sw"><input type="checkbox" id="aeEchoOn" onchange="aeRebuild()"><span class="ae-swt"></span></label>
-          </div>
-          <div class="ae-row">
-            <span class="ae-lbl">التأخير</span>
-            <input type="range" class="ae-sl" id="aeED" min="0.05" max="0.8" step="0.01" value="0.25"
-              oninput="aeShowVal('aeEDv',this.value,'s');aeRebuild()">
-            <span class="ae-val" id="aeEDv">0.25s</span>
-          </div>
-          <div class="ae-row">
-            <span class="ae-lbl">التكرار</span>
-            <input type="range" class="ae-sl" id="aeEF" min="0" max="0.85" step="0.01" value="0.3"
-              oninput="aeShowVal('aeEFv',this.value,'%');aeRebuild()">
-            <span class="ae-val" id="aeEFv">30%</span>
-          </div>
-          <div class="ae-row">
-            <span class="ae-lbl">المزج</span>
-            <input type="range" class="ae-sl" id="aeEM" min="0" max="1" step="0.01" value="0.3"
-              oninput="aeShowVal('aeEMv',this.value,'%');aeRebuild()">
-            <span class="ae-val" id="aeEMv">30%</span>
-          </div>
+          <div class="ae-trow"><span>تفعيل الصدى</span><label class="ae-sw"><input type="checkbox" id="aeEchoOn" onchange="aeRebuild()"><span class="ae-swt"></span></label></div>
+          <div class="ae-row"><span class="ae-lbl">التأخير</span><input type="range" class="ae-sl" id="aeED" min="0.05" max="0.8" step="0.01" value="0.25" oninput="aeShowVal('aeEDv',this.value,'s');aeRebuild()"><span class="ae-val" id="aeEDv">0.25s</span></div>
+          <div class="ae-row"><span class="ae-lbl">التكرار</span><input type="range" class="ae-sl" id="aeEF" min="0" max="0.85" step="0.01" value="0.3" oninput="aeShowVal('aeEFv',this.value,'%');aeRebuild()"><span class="ae-val" id="aeEFv">30%</span></div>
+          <div class="ae-row"><span class="ae-lbl">المزج</span><input type="range" class="ae-sl" id="aeEM" min="0" max="1" step="0.01" value="0.3" oninput="aeShowVal('aeEMv',this.value,'%');aeRebuild()"><span class="ae-val" id="aeEMv">30%</span></div>
         </div>
 
-        <!-- Panel: Reverb -->
         <div class="ae-pnl" id="aePnl-reverb">
-          <div class="ae-trow">
-            <span>تفعيل الرنين</span>
-            <label class="ae-sw"><input type="checkbox" id="aeRevOn" onchange="aeRebuild()"><span class="ae-swt"></span></label>
-          </div>
-          <div class="ae-row">
-            <span class="ae-lbl">الحجم</span>
-            <input type="range" class="ae-sl" id="aeRS" min="0.2" max="5" step="0.1" value="1.5"
-              oninput="aeShowVal('aeRSv',this.value,'s');aeRebuild()">
-            <span class="ae-val" id="aeRSv">1.5s</span>
-          </div>
-          <div class="ae-row">
-            <span class="ae-lbl">المزج</span>
-            <input type="range" class="ae-sl" id="aeRM" min="0" max="1" step="0.01" value="0.25"
-              oninput="aeShowVal('aeRMv',this.value,'%');aeRebuild()">
-            <span class="ae-val" id="aeRMv">25%</span>
-          </div>
+          <div class="ae-trow"><span>تفعيل الرنين</span><label class="ae-sw"><input type="checkbox" id="aeRevOn" onchange="aeRebuild()"><span class="ae-swt"></span></label></div>
+          <div class="ae-row"><span class="ae-lbl">الحجم</span><input type="range" class="ae-sl" id="aeRS" min="0.2" max="5" step="0.1" value="1.5" oninput="aeShowVal('aeRSv',this.value,'s');aeRebuild()"><span class="ae-val" id="aeRSv">1.5s</span></div>
+          <div class="ae-row"><span class="ae-lbl">المزج</span><input type="range" class="ae-sl" id="aeRM" min="0" max="1" step="0.01" value="0.25" oninput="aeShowVal('aeRMv',this.value,'%');aeRebuild()"><span class="ae-val" id="aeRMv">25%</span></div>
         </div>
 
-        <!-- Panel: EQ -->
         <div class="ae-pnl" id="aePnl-eq">
           <div style="font-size:10px;color:rgba(255,255,255,0.25);text-align:center;margin-bottom:12px;">اسحب للضبط ( +12 / −12 dB )</div>
           <div class="ae-eq">
@@ -9037,28 +9082,12 @@
           </div>
         </div>
 
-        <!-- Panel: Advanced -->
         <div class="ae-pnl" id="aePnl-adv">
-          <div class="ae-row">
-            <span class="ae-lbl">الصوت</span>
-            <input type="range" class="ae-sl" id="aeGain" min="0.1" max="3" step="0.05" value="1"
-              oninput="aeShowVal('aeGainV',this.value,'x');aeRebuild()">
-            <span class="ae-val" id="aeGainV">1.00x</span>
-          </div>
-          <div class="ae-row">
-            <span class="ae-lbl">السرعة</span>
-            <input type="range" class="ae-sl" id="aePitch" min="0.5" max="1.5" step="0.05" value="1"
-              oninput="aeShowVal('aePitchV',this.value,'x');aeRebuild()">
-            <span class="ae-val" id="aePitchV">1.00x</span>
-          </div>
+          <div class="ae-row"><span class="ae-lbl">الصوت</span><input type="range" class="ae-sl" id="aeGain" min="0.1" max="3" step="0.05" value="1" oninput="aeShowVal('aeGainV',this.value,'x');aeRebuild()"><span class="ae-val" id="aeGainV">1.00x</span></div>
           <div class="ae-div"></div>
-          <div class="ae-trow">
-            <span>ضغط الديناميكية</span>
-            <label class="ae-sw"><input type="checkbox" id="aeComp" onchange="aeRebuild()"><span class="ae-swt"></span></label>
-          </div>
+          <div class="ae-trow"><span>ضغط الديناميكية</span><label class="ae-sw"><input type="checkbox" id="aeComp" onchange="aeRebuild()"><span class="ae-swt"></span></label></div>
         </div>
 
-        <!-- Actions -->
         <div class="ae-acts">
           <button class="ae-apply" onclick="aeApply()">⚡ تطبيق</button>
           <button class="ae-rst"   onclick="aeReset()" title="إعادة ضبط">↺</button>
@@ -9069,337 +9098,263 @@
   </div>
 
   <script>
-  /* ════════════════════════════════════════
-     AUDIO EDITOR ENGINE — self-contained
-  ════════════════════════════════════════ */
+  /* ════════════════════════════════════════════
+     AUDIO EDITOR ENGINE v7
+     ArrayBuffer مخزن عند الرفع — decodeAudioData
+     play() يبني graph جديد من الصفر كل مرة
+  ════════════════════════════════════════════ */
   (function(){
-    var ctx    = null;   // AudioContext (lazy)
-    var buf    = null;   // original decoded AudioBuffer
-    var src    = null;   // current BufferSource
+    var ctx    = null;
+    var buf    = null;
+    var src    = null;
     var playing= false;
-    var offset = 0;      // playback position seconds
-    var startT = 0;      // ctx.currentTime when play started
-    var compare= false;  // true = bypass effects
+    var offset = 0;
+    var startT = 0;
+    var compare= false;
     var raf    = null;
     var eqG    = [0,0,0,0,0];
     var EQ     = [[60,'lowshelf'],[250,'peaking'],[1000,'peaking'],[4000,'peaking'],[12000,'highshelf']];
 
-    /* ── tiny helpers ── */
     function g(id){ return document.getElementById(id); }
     function fmt(s){ var m=Math.floor(s/60),sc=Math.floor(s%60); return m+':'+(sc<10?'0':'')+sc; }
-    function dur(){ return buf ? buf.duration : 0; }
+    function dur(){ return buf?buf.duration:0; }
 
-    /* show slider value */
-    window.aeShowVal = function(vid, v, suf){
-      var n = parseFloat(v);
-      g(vid).textContent = suf==='%' ? Math.round(n*100)+'%'
-                         : suf==='s' ? n.toFixed(2)+'s'
-                         : suf==='x' ? n.toFixed(2)+'x'
-                         : v;
+    window.aeShowVal=function(vid,v,suf){
+      var n=parseFloat(v);
+      g(vid).textContent=suf==='%'?Math.round(n*100)+'%':suf==='s'?n.toFixed(2)+'s':suf==='x'?n.toFixed(2)+'x':v;
+    };
+    window.aeSwitchTab=function(name,btn){
+      document.querySelectorAll('.ae-pnl').forEach(function(el){el.classList.remove('on');});
+      document.querySelectorAll('.ae-tab').forEach(function(el){el.classList.remove('on');});
+      g('aePnl-'+name).classList.add('on'); btn.classList.add('on');
     };
 
-    /* EQ band update */
-    window.aeEQ = function(i, v){
-      eqG[i] = parseFloat(v);
-      g('aeQ'+i+'v').textContent = (v>0?'+':'')+parseFloat(v).toFixed(0);
-      if(playing) rebuild();
-    };
-
-    /* tab switch */
-    window.aeSwitchTab = function(name, btn){
-      document.querySelectorAll('.ae-pnl').forEach(function(el){ el.classList.remove('on'); });
-      document.querySelectorAll('.ae-tab').forEach(function(el){ el.classList.remove('on'); });
-      g('aePnl-'+name).classList.add('on');
-      btn.classList.add('on');
-    };
-
-    /* ── open / close ── */
-    window.openAudioEditor = function(){
-      /* يلزم وجود ملف مرفوع */
-      if (!window._casAudioUrl && !window._casAudioFile){
+    /* ── open ── */
+    window.openAudioEditor=function(){
+      if(!window._casAudioArrayBuffer && !window._casAudioFile){
         if(typeof toast$==='function') toast$('⚠ ارفع ملف صوتي أولاً');
         return;
       }
       g('aeModal').classList.add('show');
-      /* resume or create context */
-      if(!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-      ctx.resume().then(function(){ loadBuf(); });
+      if(!ctx) ctx=new(window.AudioContext||window.webkitAudioContext)();
+      ctx.resume().then(function(){ if(!buf) _load(); });
     };
-
-    window.closeAudioEditor = function(){
+    window.closeAudioEditor=function(){
       g('aeModal').classList.remove('show');
-      stop();
+      _stop();
     };
 
-    /* ── load & decode ── */
-    async function loadBuf(){
-      g('aeNotice').textContent = 'جاري تحميل الصوت...';
-      g('aeNotice').style.display = '';
-      try {
-        var ab;
-        if (window._casAudioFile) {
-          /* قراءة مباشرة من الملف بـ FileReader — الأضمن على كل المتصفحات */
-          ab = await new Promise(function(resolve, reject){
-            var reader = new FileReader();
-            reader.onload  = function(e){ resolve(e.target.result); };
-            reader.onerror = function(){ reject(new Error('FileReader error')); };
-            reader.readAsArrayBuffer(window._casAudioFile);
-          });
-        } else if (window._casAudioUrl) {
-          ab = await (await fetch(window._casAudioUrl)).arrayBuffer();
-        } else {
-          throw new Error('لا يوجد ملف صوتي');
+    /* ── load ── */
+    function _load(){
+      var notice=g('aeNotice');
+      if(notice){notice.textContent='جاري التحميل...';notice.style.display='';}
+
+      function decode(ab){
+        if(!ab || ab.byteLength===0){
+          if(notice) notice.textContent='⚠ الملف فارغ أو تالف (0 bytes)';
+          return;
         }
-        buf    = await ctx.decodeAudioData(ab);
-        offset = 0;
-        drawWave();
-        updateUI(0);
-        g('aeNotice').style.display = 'none';
-      } catch(e){
-        g('aeNotice').textContent = '⚠ تعذّر تحميل الصوت: ' + e.message;
-        console.error('AE loadBuf:', e);
+        if(notice) notice.textContent='جاري فك الترميز... ('+Math.round(ab.byteLength/1024)+'KB)';
+        try {
+          ctx.decodeAudioData(ab.slice(0),
+            function(decoded){
+              buf=decoded; offset=0; _drawWave(); _updateUI(0);
+              if(notice) notice.style.display='none';
+            },
+            function(err){
+              if(notice) notice.textContent='⚠ فشل فك الترميز — تأكد إن الملف MP3/AAC/WAV صحيح ('+err+')';
+            }
+          );
+        } catch(ex){
+          if(notice) notice.textContent='⚠ خطأ: '+ex.message;
+        }
       }
+
+      if(window._casAudioArrayBuffer){
+        if(notice) notice.textContent='جاري التحميل من الذاكرة... ('+Math.round(window._casAudioArrayBuffer.byteLength/1024)+'KB)';
+        decode(window._casAudioArrayBuffer);
+        return;
+      }
+
+      var file = window._casAudioFile;
+      if(!file){ if(notice) notice.textContent='⚠ لا يوجد ملف — ارفع الصوت أولاً'; return; }
+      if(notice) notice.textContent='جاري قراءة الملف: '+file.name+' ('+Math.round(file.size/1024)+'KB)';
+      var fr=new FileReader();
+      fr.onload=function(e){ window._casAudioArrayBuffer=e.target.result; decode(e.target.result); };
+      fr.onerror=function(e){ if(notice) notice.textContent='⚠ فشل قراءة الملف: '+e.target.error; };
+      fr.readAsArrayBuffer(file);
     }
 
     /* ── waveform ── */
-    function drawWave(){
-      var wrap = g('aeWaveWrap');
-      var cv   = g('aeWaveCanvas');
-      cv.width  = wrap.clientWidth  || 340;
-      cv.height = wrap.clientHeight || 64;
-      var cx   = cv.getContext('2d');
-      var data = buf.getChannelData(0);
-      var step = Math.ceil(data.length / cv.width);
-      var amp  = cv.height / 2;
-      cx.fillStyle = '#070e09';
-      cx.fillRect(0,0,cv.width,cv.height);
-      cx.strokeStyle = 'rgba(201,151,58,0.1)';
-      cx.lineWidth = 1;
-      cx.beginPath(); cx.moveTo(0,amp); cx.lineTo(cv.width,amp); cx.stroke();
-      var gr = cx.createLinearGradient(0,0,0,cv.height);
+    function _drawWave(){
+      var wrap=g('aeWaveWrap'),cv=g('aeWaveCanvas');
+      if(!wrap||!cv||!buf) return;
+      cv.width=wrap.clientWidth||340; cv.height=wrap.clientHeight||64;
+      var cx=cv.getContext('2d'),data=buf.getChannelData(0);
+      var step=Math.ceil(data.length/cv.width),amp=cv.height/2;
+      cx.fillStyle='#070e09'; cx.fillRect(0,0,cv.width,cv.height);
+      var gr=cx.createLinearGradient(0,0,0,cv.height);
       gr.addColorStop(0,'rgba(228,181,90,0.9)');
       gr.addColorStop(.5,'rgba(201,151,58,0.6)');
       gr.addColorStop(1,'rgba(228,181,90,0.9)');
-      cx.strokeStyle = gr; cx.lineWidth = 1;
-      cx.beginPath();
+      cx.strokeStyle=gr; cx.lineWidth=1; cx.beginPath();
       for(var i=0;i<cv.width;i++){
         var mn=1,mx=-1;
-        for(var j=0;j<step;j++){ var d=data[i*step+j]||0; if(d<mn)mn=d; if(d>mx)mx=d; }
+        for(var j=0;j<step;j++){var d=data[i*step+j]||0;if(d<mn)mn=d;if(d>mx)mx=d;}
         cx.moveTo(i,(1+mn)*amp); cx.lineTo(i,(1+mx)*amp);
       }
       cx.stroke();
     }
 
-    /* ── stop ── */
-    function stop(){
-      if(raf){ cancelAnimationFrame(raf); raf=null; }
-      if(src){ try{ src.stop(); }catch(e){} src=null; }
-      if(playing){
-        /* save position */
-        var elapsed = ctx.currentTime - startT;
-        offset = Math.min(elapsed, dur());
-      }
-      playing = false;
-      var btn = g('aePlayBtn');
-      if(btn) btn.textContent = '▶';
+    function _updateUI(cur){
+      var d=dur()||1,pct=(cur/d*100).toFixed(2)+'%';
+      var pf=g('aeProgFill');if(pf)pf.style.width=pct;
+      var wc=g('aeWaveCur'); if(wc)wc.style.left=pct;
+      var tm=g('aeTimes');   if(tm)tm.textContent=fmt(cur)+' / '+fmt(d);
     }
 
-    /* ── play with full graph ── */
-    function play(){
-      if(!ctx || !buf) return;
-      stop();  /* stop first, offset already saved */
+    function _stop(){
+      if(raf){cancelAnimationFrame(raf);raf=null;}
+      if(playing&&ctx) offset=Math.min(ctx.currentTime-startT,dur());
+      if(src){try{src.stop();}catch(e){}src=null;}
+      playing=false;
+      var b=g('aePlayBtn');if(b)b.textContent='▶';
+    }
 
-      var gainV  = parseFloat(g('aeGain').value)  || 1;
-      var pitchV = parseFloat(g('aePitch').value) || 1;
+    function _play(){
+      if(!ctx||!buf) return;
+      if(playing&&ctx) offset=Math.min(ctx.currentTime-startT,dur());
+      if(raf){cancelAnimationFrame(raf);raf=null;}
+      if(src){try{src.stop();}catch(e){}src=null;}
+      playing=false;
+      if(ctx.state==='suspended') ctx.resume();
+      if(offset>=dur()-0.05) offset=0;
 
-      src = ctx.createBufferSource();
-      src.buffer = buf;
-      src.playbackRate.value = pitchV;
+      src=ctx.createBufferSource();
+      src.buffer=buf;
+      var node=src;
 
-      /* build chain */
-      var node = src;
-
-      /* 1. Gain */
-      var gn = ctx.createGain();
-      gn.gain.value = compare ? 1 : gainV;
-      node.connect(gn); node = gn;
+      var gn=ctx.createGain(); gn.gain.value=compare?1:(parseFloat(g('aeGain').value)||1);
+      node.connect(gn); node=gn;
 
       if(!compare){
-        /* 2. EQ */
         EQ.forEach(function(band,i){
-          var f = ctx.createBiquadFilter();
-          f.type=band[1]; f.frequency.value=band[0]; f.gain.value=eqG[i];
-          node.connect(f); node=f;
+          var f=ctx.createBiquadFilter();
+          f.type=band[1];f.frequency.value=band[0];f.gain.value=eqG[i];f.Q.value=1;
+          node.connect(f);node=f;
         });
-
-        /* 3. Compressor */
         if(g('aeComp').checked){
-          var comp = ctx.createDynamicsCompressor();
-          comp.threshold.value=-24; comp.knee.value=10; comp.ratio.value=4;
-          node.connect(comp); node=comp;
+          var cp=ctx.createDynamicsCompressor();
+          cp.threshold.value=-24;cp.knee.value=10;cp.ratio.value=4;
+          cp.attack.value=0.003;cp.release.value=0.25;
+          node.connect(cp);node=cp;
         }
-
-        /* 4. Echo (delay feedback) */
-        if(g('aeEchoOn').checked){
-          var dlyT= parseFloat(g('aeED').value);
-          var fbV = parseFloat(g('aeEF').value);
-          var mixV= parseFloat(g('aeEM').value);
-          var dly = ctx.createDelay(3.0);
-          var fb  = ctx.createGain();
-          var wet = ctx.createGain();
-          var dry = ctx.createGain();
-          dly.delayTime.value=dlyT; fb.gain.value=fbV;
-          wet.gain.value=mixV; dry.gain.value=1-mixV;
-          node.connect(dry);   dry.connect(ctx.destination);
-          node.connect(dly);   dly.connect(fb); fb.connect(dly);
-          dly.connect(wet);    wet.connect(ctx.destination);
-          node=null; /* already routed to destination */
-        }
-
-        /* 5. Reverb (convolution) */
-        if(node && g('aeRevOn').checked){
-          var sz  = parseFloat(g('aeRS').value);
-          var rmix= parseFloat(g('aeRM').value);
-          var ir  = mkIR(sz);
-          var conv= ctx.createConvolver(); conv.buffer=ir;
-          var rw  = ctx.createGain(); rw.gain.value=rmix;
-          var rd  = ctx.createGain(); rd.gain.value=1-rmix;
-          node.connect(rd); rd.connect(ctx.destination);
-          node.connect(conv); conv.connect(rw); rw.connect(ctx.destination);
+        var eOn=g('aeEchoOn').checked, rOn=g('aeRevOn').checked;
+        if(eOn||rOn){
+          // dry: node → destination مباشرة
+          node.connect(ctx.destination);
+          // echo wet path
+          if(eOn){
+            var dly=ctx.createDelay(3);
+            dly.delayTime.value=parseFloat(g('aeED').value)||0.25;
+            var fb=ctx.createGain();
+            fb.gain.value=Math.min(parseFloat(g('aeEF').value)||0.3,0.88);
+            var wt=ctx.createGain();
+            wt.gain.value=parseFloat(g('aeEM').value)||0.3;
+            node.connect(dly); dly.connect(fb); fb.connect(dly);
+            dly.connect(wt);   wt.connect(ctx.destination);
+          }
+          // reverb wet path
+          if(rOn){
+            var cv2=ctx.createConvolver();
+            cv2.buffer=_mkIR(parseFloat(g('aeRS').value)||1.5);
+            var rw=ctx.createGain();
+            rw.gain.value=parseFloat(g('aeRM').value)||0.25;
+            node.connect(cv2); cv2.connect(rw); rw.connect(ctx.destination);
+          }
           node=null;
         }
       }
-
       if(node) node.connect(ctx.destination);
 
-      src.start(0, offset);
-      startT  = ctx.currentTime - offset;
-      playing = true;
-      g('aePlayBtn').textContent = '⏸';
-      src.onended = function(){
-        if(playing){ stop(); offset=0; updateUI(0); }
+      src.start(0,offset);
+      startT=ctx.currentTime-offset;
+      playing=true;
+      g('aePlayBtn').textContent='⏸';
+      src.onended=function(){
+        if(playing){playing=false;offset=0;_updateUI(0);var b=g('aePlayBtn');if(b)b.textContent='▶';}
       };
-      loop();
+      (function loop(){
+        if(!playing||!ctx)return;
+        _updateUI(Math.min(ctx.currentTime-startT,dur()));
+        raf=requestAnimationFrame(loop);
+      })();
     }
 
-    /* animation loop */
-    function loop(){
-      if(!playing||!ctx) return;
-      var cur = Math.min(ctx.currentTime - startT, dur());
-      updateUI(cur);
-      raf = requestAnimationFrame(loop);
-    }
-
-    function updateUI(cur){
-      var d   = dur()||1;
-      var pct = (cur/d*100).toFixed(2)+'%';
-      g('aeProgFill').style.width = pct;
-      g('aeWaveCur').style.left   = pct;
-      g('aeTimes').textContent    = fmt(cur)+' / '+fmt(d);
-    }
-
-    /* ── public controls ── */
-    window.aeTogglePlay = function(){
-      if(!buf){ if(typeof toast$==='function') toast$('⏳ الصوت لم يُحمَّل بعد'); return; }
-      if(ctx.state==='suspended') ctx.resume();
-      if(playing) stop(); else play();
+    window.aeTogglePlay=function(){
+      if(!buf){if(typeof toast$==='function')toast$('⏳ الصوت لم يُحمَّل بعد');return;}
+      if(ctx&&ctx.state==='suspended'){ctx.resume().then(function(){if(playing)_stop();else _play();});return;}
+      if(playing)_stop();else _play();
+    };
+    window.aeSeekBar=function(e){
+      if(!buf)return;
+      var bar=g('aeProgBar');
+      offset=Math.max(0,Math.min((e.clientX-bar.getBoundingClientRect().left)/bar.clientWidth*dur(),dur()));
+      if(playing)_play();else _updateUI(offset);
+    };
+    window.aeSeekWave=function(e){
+      if(!buf)return;
+      var wrap=g('aeWaveWrap');
+      offset=Math.max(0,Math.min((e.clientX-wrap.getBoundingClientRect().left)/wrap.clientWidth*dur(),dur()));
+      if(playing)_play();else _updateUI(offset);
+    };
+    window.aeSetCompare=function(on){compare=on;_play();};
+    window.aeRebuild=function(){_play();};
+    window.aeEQ=function(i,v){
+      eqG[i]=parseFloat(v);
+      g('aeQ'+i+'v').textContent=(v>0?'+':'')+parseFloat(v).toFixed(0);
+      _play();
     };
 
-    window.aeSeekBar = function(e){
-      if(!buf) return;
-      var bar = g('aeProgBar');
-      var pct = (e.clientX - bar.getBoundingClientRect().left) / bar.clientWidth;
-      offset  = Math.max(0, Math.min(pct * dur(), dur()));
-      if(playing) play(); else updateUI(offset);
-    };
-
-    window.aeSeekWave = function(e){
-      if(!buf) return;
-      var wrap = g('aeWaveWrap');
-      var pct  = (e.clientX - wrap.getBoundingClientRect().left) / wrap.clientWidth;
-      offset   = Math.max(0, Math.min(pct * dur(), dur()));
-      if(playing) play(); else updateUI(offset);
-    };
-
-    window.aeSetCompare = function(on){
-      compare = on;
-      if(playing) play();
-    };
-
-    /* rebuild on any change */
-    window.aeRebuild = function(){
-      if(playing) play();
-    };
-
-    /* impulse response */
-    function mkIR(seconds){
-      var sr  = ctx.sampleRate;
-      var len = Math.floor(sr * seconds);
-      var ir  = ctx.createBuffer(2, len, sr);
-      for(var ch=0;ch<2;ch++){
-        var d = ir.getChannelData(ch);
-        for(var i=0;i<len;i++) d[i] = (Math.random()*2-1) * Math.pow(1-i/len, 2.5);
-      }
+    function _mkIR(sec){
+      var sr=ctx.sampleRate,len=Math.floor(sr*sec),ir=ctx.createBuffer(2,len,sr);
+      for(var ch=0;ch<2;ch++){var d=ir.getChannelData(ch);for(var i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.5);}
       return ir;
     }
 
-    /* ── presets ── */
-    var PRESETS = {
-      natural:{ echoOn:false,ed:.25,ef:.30,em:.30, revOn:false,rs:1.5,rm:.25, gain:1,   pitch:1,   comp:false, eq:[0,0,0,0,0]   },
-      clear:  { echoOn:false,ed:.20,ef:.20,em:.20, revOn:false,rs:1.0,rm:.15, gain:1.2, pitch:1,   comp:true,  eq:[0,-2,2,3,1]  },
-      studio: { echoOn:false,ed:.20,ef:.25,em:.25, revOn:true, rs:1.2,rm:.20, gain:1,   pitch:1,   comp:true,  eq:[2,1,0,1,2]   },
-      mosque: { echoOn:false,ed:.35,ef:.45,em:.45, revOn:true, rs:3.5,rm:.50, gain:1,   pitch:1,   comp:false, eq:[3,1,-1,0,1]  }
+    var PRESETS={
+      natural:{echoOn:false,ed:.25,ef:.30,em:.30,revOn:false,rs:1.5,rm:.25,gain:1,comp:false,eq:[0,0,0,0,0]},
+      clear:  {echoOn:false,ed:.20,ef:.20,em:.20,revOn:false,rs:1.0,rm:.15,gain:1.2,comp:true,eq:[0,-2,2,3,1]},
+      studio: {echoOn:false,ed:.20,ef:.25,em:.25,revOn:true,rs:1.2,rm:.20,gain:1,comp:true,eq:[2,1,0,1,2]},
+      mosque: {echoOn:false,ed:.35,ef:.45,em:.45,revOn:true,rs:3.5,rm:.50,gain:1,comp:false,eq:[3,1,-1,0,1]}
     };
-
-    function setSlider(id,valId,v,suf){
-      var el=g(id); if(!el) return;
-      el.value=v; aeShowVal(valId,v,suf);
-    }
-
-    window.aePreset = function(name, btn){
-      var p=PRESETS[name]; if(!p) return;
-      document.querySelectorAll('.ae-p').forEach(function(b){ b.classList.remove('on'); });
-      btn.classList.add('on');
-      g('aeEchoOn').checked = p.echoOn;
-      setSlider('aeED','aeEDv', p.ed,'s');
-      setSlider('aeEF','aeEFv', p.ef,'%');
-      setSlider('aeEM','aeEMv', p.em,'%');
-      g('aeRevOn').checked = p.revOn;
-      setSlider('aeRS','aeRSv', p.rs,'s');
-      setSlider('aeRM','aeRMv', p.rm,'%');
-      setSlider('aeGain','aeGainV', p.gain,'x');
-      setSlider('aePitch','aePitchV', p.pitch,'x');
-      g('aeComp').checked = p.comp;
-      document.querySelectorAll('.ae-eqsl').forEach(function(sl,i){
-        sl.value=p.eq[i]; aeEQ(i,p.eq[i]);
-      });
-      if(playing) play();
+    function _sl(id,vid,v,suf){var el=g(id);if(!el)return;el.value=v;window.aeShowVal(vid,v,suf);}
+    window.aePreset=function(name,btn){
+      var p=PRESETS[name];if(!p)return;
+      document.querySelectorAll('.ae-p').forEach(function(b){b.classList.remove('on');});
+      if(btn)btn.classList.add('on');
+      g('aeEchoOn').checked=p.echoOn;_sl('aeED','aeEDv',p.ed,'s');_sl('aeEF','aeEFv',p.ef,'%');_sl('aeEM','aeEMv',p.em,'%');
+      g('aeRevOn').checked=p.revOn;_sl('aeRS','aeRSv',p.rs,'s');_sl('aeRM','aeRMv',p.rm,'%');
+      _sl('aeGain','aeGainV',p.gain,'x');
+      g('aeComp').checked=p.comp;
+      document.querySelectorAll('.ae-eqsl').forEach(function(sl,i){sl.value=p.eq[i];window.aeEQ(i,p.eq[i]);});
+      _play();
     };
-
-    window.aeReset = function(){ aePreset('natural', g('aePreset-natural')); };
-
-    /* ── apply: save settings for export ── */
-    window.aeApply = function(){
-      stop();
-      window._aeSettings = {
-        gain:    parseFloat(g('aeGain').value),
-        pitch:   parseFloat(g('aePitch').value),
-        compress:g('aeComp').checked,
-        echoOn:  g('aeEchoOn').checked,
-        ed:      parseFloat(g('aeED').value),
-        ef:      parseFloat(g('aeEF').value),
-        em:      parseFloat(g('aeEM').value),
-        revOn:   g('aeRevOn').checked,
-        rs:      parseFloat(g('aeRS').value),
-        rm:      parseFloat(g('aeRM').value),
-        eq:      eqG.slice()
+    window.aeReset=function(){window.aePreset('natural',g('aePreset-natural'));};
+    window.aeApply=function(){
+      _stop();
+      window._aeSettings={
+        gain:parseFloat(g('aeGain').value),compress:g('aeComp').checked,
+        echoOn:g('aeEchoOn').checked,ed:parseFloat(g('aeED').value),ef:parseFloat(g('aeEF').value),em:parseFloat(g('aeEM').value),
+        revOn:g('aeRevOn').checked,rs:parseFloat(g('aeRS').value),rm:parseFloat(g('aeRM').value),
+        eq:eqG.slice()
       };
       closeAudioEditor();
-      if(typeof toast$==='function') toast$('✅ تم حفظ إعدادات الصوت');
+      if(typeof toast$==='function')toast$('✅ تم حفظ إعدادات الصوت');
     };
 
   })();
   </script>
 
-  </body>
+    </body>
 </html>
