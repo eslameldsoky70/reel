@@ -3787,7 +3787,7 @@
               </div>
               <label class="cas-upload-label" for="casAudioInput">
                 <span>⬆ اختر ملف صوتي</span>
-                <input type="file" id="casAudioInput" accept="audio/*" style="display:none" onchange="casLoadAudio(this)">
+                <input type="file" id="casAudioInput" accept=".mp3,.m4a,.aac,.wav,.ogg,audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/ogg" style="display:none" onchange="casLoadAudio(this)">
               </label>
             </div>
 
@@ -4163,7 +4163,7 @@
           <div class="mas-audio-info" id="mas-audio-info">🎵 لا يوجد صوت مرفوع — سيستخدم صوت القارئ</div>
           <label class="mas-audio-upload-btn" for="masAudioInput">
             ⬆ رفع صوت
-            <input type="file" id="masAudioInput" accept="audio/*" style="display:none" onchange="masLoadAudio(this)">
+            <input type="file" id="masAudioInput" accept=".mp3,.m4a,.aac,.wav,.ogg,audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/ogg" style="display:none" onchange="masLoadAudio(this)">
           </label>
           <button class="mas-audio-clear-btn" id="mas-audio-clear" onclick="masClearAudio()" style="display:none">✕</button>
         </div>
