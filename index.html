@@ -1340,6 +1340,180 @@
       }
       .cas-sync-btn:hover { background: linear-gradient(135deg,#163d22,#24633a); }
 
+      /* ── Audio Edit Button ── */
+      .cas-edit-btn {
+        width:100%; margin-top:8px; padding:10px;
+        background:rgba(201,151,58,0.07);
+        border:1px solid rgba(201,151,58,0.28); border-radius:9px;
+        color:#e4b55a; font-family:'Cairo',sans-serif; font-weight:700; font-size:13px;
+        cursor:pointer; transition:background .2s,border-color .2s;
+      }
+      .cas-edit-btn:hover{background:rgba(201,151,58,0.14);border-color:rgba(201,151,58,0.55);}
+
+      /* ═══ AUDIO EDITOR MODAL ═══ */
+      .ae-ov{
+        position:fixed;inset:0;background:rgba(0,0,0,0.88);
+        backdrop-filter:blur(18px);z-index:7000;
+        display:flex;align-items:flex-end;justify-content:center;
+        direction:rtl;opacity:0;pointer-events:none;transition:opacity .28s;
+      }
+      .ae-ov.show{opacity:1;pointer-events:all;}
+      .ae-box{
+        background:#0c1810;border:1px solid rgba(201,151,58,0.22);border-bottom:none;
+        border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;
+        transform:translateY(44px);transition:transform .32s cubic-bezier(.32,1.1,.52,1);
+        box-shadow:0 -20px 60px rgba(0,0,0,0.7);
+      }
+      .ae-ov.show .ae-box{transform:translateY(0);}
+      .ae-handle{width:36px;height:4px;background:rgba(255,255,255,0.12);border-radius:4px;margin:12px auto 0;}
+      .ae-hdr{
+        display:flex;align-items:center;justify-content:space-between;
+        padding:14px 18px 12px;border-bottom:1px solid rgba(201,151,58,0.1);
+        position:sticky;top:0;background:#0c1810;z-index:2;
+      }
+      .ae-hdr-l{display:flex;align-items:center;gap:8px;}
+      .ae-hdr-ico{
+        width:30px;height:30px;border-radius:8px;font-size:14px;
+        background:linear-gradient(135deg,#1a3020,#245c38);
+        border:1px solid rgba(201,151,58,0.25);
+        display:flex;align-items:center;justify-content:center;
+      }
+      .ae-hdr-ttl{font-size:15px;font-weight:700;color:#e4c97a;}
+      .ae-cls{
+        background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);
+        color:rgba(255,255,255,0.45);width:28px;height:28px;border-radius:50%;
+        cursor:pointer;font-size:12px;transition:background .2s;
+      }
+      .ae-cls:hover{background:rgba(255,80,80,0.2);color:#ff7070;}
+      .ae-body{padding:14px 16px 22px;}
+      /* waveform */
+      .ae-wave{
+        background:#070e09;border:1px solid rgba(201,151,58,0.12);
+        border-radius:10px;height:64px;margin-bottom:10px;
+        position:relative;overflow:hidden;cursor:pointer;
+      }
+      .ae-wave canvas{width:100%;height:100%;display:block;}
+      .ae-wave-cur{
+        position:absolute;top:0;bottom:0;width:2px;left:0%;
+        background:rgba(228,181,90,0.85);pointer-events:none;
+        transition:left .1s linear;
+      }
+      /* player */
+      .ae-player{display:flex;align-items:center;gap:9px;margin-bottom:12px;}
+      .ae-pbtn{
+        background:linear-gradient(135deg,#245c38,#3ea066);
+        border:1px solid rgba(62,160,102,0.4);color:#fff;
+        width:38px;height:38px;border-radius:50%;font-size:14px;cursor:pointer;
+        flex-shrink:0;display:flex;align-items:center;justify-content:center;
+        transition:opacity .2s;
+      }
+      .ae-pbtn:hover{opacity:.85;}
+      .ae-prog{flex:1;height:5px;background:rgba(255,255,255,0.09);border-radius:5px;cursor:pointer;position:relative;}
+      .ae-prog-fill{height:100%;width:0%;border-radius:5px;background:linear-gradient(90deg,#c9973a,#e4b55a);}
+      .ae-times{font-size:10px;color:rgba(255,255,255,0.3);direction:ltr;white-space:nowrap;}
+      /* compare */
+      .ae-cmp{
+        display:flex;align-items:center;justify-content:center;gap:9px;
+        margin-bottom:14px;font-size:11px;color:rgba(255,255,255,0.4);
+        background:#070e09;border:1px solid rgba(255,255,255,0.07);
+        border-radius:8px;padding:8px 12px;
+      }
+      /* presets */
+      .ae-ps-lbl{font-size:10px;letter-spacing:2px;color:#6e8878;text-transform:uppercase;margin-bottom:9px;display:block;}
+      .ae-ps{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px;}
+      .ae-p{
+        background:#112016;border:1px solid rgba(201,151,58,0.12);border-radius:10px;
+        cursor:pointer;padding:8px 4px;text-align:center;
+        color:rgba(255,255,255,0.5);font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;
+        display:flex;flex-direction:column;align-items:center;gap:4px;
+        transition:background .2s,border-color .2s,color .2s;
+      }
+      .ae-p span{font-size:18px;}
+      .ae-p:hover,.ae-p.on{background:rgba(201,151,58,0.1);border-color:rgba(201,151,58,0.45);color:#e4b55a;}
+      /* tabs */
+      .ae-tabs{
+        display:flex;background:#070e09;border:1px solid rgba(255,255,255,0.07);
+        border-radius:9px;padding:3px;margin-bottom:14px;
+      }
+      .ae-tab{
+        flex:1;padding:7px 2px;background:none;border:none;
+        color:rgba(255,255,255,0.35);font-family:'Cairo',sans-serif;
+        font-size:12px;font-weight:700;border-radius:7px;cursor:pointer;transition:background .2s,color .2s;
+      }
+      .ae-tab.on{background:rgba(201,151,58,0.15);color:#e4b55a;}
+      .ae-pnl{display:none;}.ae-pnl.on{display:block;}
+      /* slider row */
+      .ae-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+      .ae-lbl{font-size:11px;color:#6e8878;width:52px;flex-shrink:0;text-align:right;}
+      .ae-sl{
+        flex:1;-webkit-appearance:none;height:4px;border-radius:4px;
+        background:rgba(255,255,255,0.1);outline:none;cursor:pointer;
+      }
+      .ae-sl::-webkit-slider-thumb{
+        -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+        background:linear-gradient(135deg,#c9973a,#e4b55a);
+        cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,0.5);
+      }
+      .ae-val{font-size:10px;color:rgba(255,255,255,0.3);width:36px;direction:ltr;}
+      /* toggle */
+      .ae-trow{
+        display:flex;align-items:center;justify-content:space-between;
+        padding:9px 11px;margin-bottom:10px;
+        background:#070e09;border:1px solid rgba(255,255,255,0.07);border-radius:8px;
+        font-size:12px;color:rgba(255,255,255,0.6);
+      }
+      .ae-sw{position:relative;display:inline-block;width:36px;height:20px;}
+      .ae-sw input{opacity:0;width:0;height:0;}
+      .ae-swt{
+        position:absolute;inset:0;background:rgba(255,255,255,0.1);
+        border-radius:20px;cursor:pointer;transition:background .25s;
+      }
+      .ae-swt:before{
+        content:'';position:absolute;width:14px;height:14px;right:3px;top:3px;
+        background:rgba(255,255,255,0.5);border-radius:50%;transition:transform .25s,background .25s;
+      }
+      .ae-sw input:checked+.ae-swt{background:#3ea066;}
+      .ae-sw input:checked+.ae-swt:before{transform:translateX(-16px);background:#fff;}
+      /* EQ */
+      .ae-eq{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px;}
+      .ae-eqc{display:flex;flex-direction:column;align-items:center;gap:5px;}
+      .ae-eqsl{
+        -webkit-appearance:slider-vertical;writing-mode:vertical-lr;direction:rtl;
+        width:24px;height:88px;background:transparent;cursor:pointer;outline:none;
+      }
+      .ae-eqsl::-webkit-slider-thumb{
+        -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+        background:linear-gradient(135deg,#c9973a,#e4b55a);box-shadow:0 1px 4px rgba(0,0,0,0.5);
+      }
+      .ae-eqlbl{font-size:9px;color:#6e8878;}
+      .ae-eqv{font-size:9px;color:rgba(255,255,255,0.3);min-height:12px;}
+      /* actions */
+      .ae-acts{display:flex;gap:8px;margin-top:18px;}
+      .ae-apply{
+        flex:1;padding:11px;background:linear-gradient(135deg,#c9973a,#e4b55a);
+        border:none;border-radius:10px;color:#070e09;
+        font-family:'Cairo',sans-serif;font-weight:900;font-size:13px;cursor:pointer;
+        display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .2s;
+      }
+      .ae-apply:hover{opacity:.88;}
+      .ae-rst{
+        padding:11px 12px;background:#070e09;
+        border:1px solid rgba(255,255,255,0.1);border-radius:10px;
+        color:rgba(255,255,255,0.4);font-size:15px;cursor:pointer;transition:all .2s;
+      }
+      .ae-rst:hover{border-color:rgba(201,151,58,0.4);color:#e4b55a;}
+      .ae-cnl{
+        padding:11px 14px;background:rgba(255,80,80,0.07);
+        border:1px solid rgba(255,80,80,0.2);border-radius:10px;
+        color:#ff8080;font-family:'Cairo',sans-serif;font-size:12px;cursor:pointer;transition:background .2s;
+      }
+      .ae-cnl:hover{background:rgba(255,80,80,0.14);}
+      .ae-div{height:1px;background:rgba(201,151,58,0.09);margin:12px 0;}
+      .ae-notice{
+        font-size:10px;color:rgba(255,255,255,0.25);text-align:center;
+        margin-bottom:14px;line-height:1.7;
+      }
+
       /* ═══ MANUAL AYAH SYNC MODAL ═══ */
       .mas-overlay {
         position: fixed;
@@ -3823,6 +3997,9 @@
               </div>
               <button class="cas-sync-btn" onclick="openManualAyahSync()">
                 🖐 مزامنة الآيات يدوياً
+              </button>
+              <button class="cas-edit-btn" onclick="openAudioEditor()">
+                ✂️ تحرير الصوت
               </button>
             </div>
           </div>
@@ -8745,5 +8922,484 @@
         else if (MAS.active) masStart();
       });
     </script>
+
+  <!-- ════════ AUDIO EDITOR MODAL ════════ -->
+  <div class="ae-ov" id="aeModal">
+    <div class="ae-box">
+      <div class="ae-handle"></div>
+      <div class="ae-hdr">
+        <div class="ae-hdr-l">
+          <div class="ae-hdr-ico">✂️</div>
+          <span class="ae-hdr-ttl">تحرير الصوت</span>
+        </div>
+        <button class="ae-cls" onclick="closeAudioEditor()">✕</button>
+      </div>
+      <div class="ae-body">
+
+        <div class="ae-notice" id="aeNotice">جاري تحميل الصوت...</div>
+
+        <!-- Waveform -->
+        <div class="ae-wave" id="aeWaveWrap" onclick="aeSeekWave(event)">
+          <canvas id="aeWaveCanvas"></canvas>
+          <div class="ae-wave-cur" id="aeWaveCur"></div>
+        </div>
+
+        <!-- Player -->
+        <div class="ae-player">
+          <button class="ae-pbtn" id="aePlayBtn" onclick="aeTogglePlay()">▶</button>
+          <div class="ae-prog" id="aeProgBar" onclick="aeSeekBar(event)">
+            <div class="ae-prog-fill" id="aeProgFill"></div>
+          </div>
+          <span class="ae-times" id="aeTimes">0:00 / 0:00</span>
+        </div>
+
+        <!-- Compare toggle -->
+        <div class="ae-cmp">
+          <span>مقارنة مع الصوت الأصلي</span>
+          <label class="ae-sw">
+            <input type="checkbox" id="aeCompare" onchange="aeSetCompare(this.checked)">
+            <span class="ae-swt"></span>
+          </label>
+        </div>
+
+        <!-- Quick presets -->
+        <span class="ae-ps-lbl">⚡ إعدادات سريعة</span>
+        <div class="ae-ps">
+          <button class="ae-p on" id="aePreset-natural" onclick="aePreset('natural',this)"><span>🌿</span>طبيعي</button>
+          <button class="ae-p"    id="aePreset-clear"   onclick="aePreset('clear',this)"><span>✨</span>واضح</button>
+          <button class="ae-p"    id="aePreset-studio"  onclick="aePreset('studio',this)"><span>🎙</span>استوديو</button>
+          <button class="ae-p"    id="aePreset-mosque"  onclick="aePreset('mosque',this)"><span>🕌</span>مسجد</button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="ae-tabs">
+          <button class="ae-tab on" onclick="aeSwitchTab('echo',this)">صدى</button>
+          <button class="ae-tab"    onclick="aeSwitchTab('reverb',this)">رنين</button>
+          <button class="ae-tab"    onclick="aeSwitchTab('eq',this)">معادل</button>
+          <button class="ae-tab"    onclick="aeSwitchTab('adv',this)">متقدم</button>
+        </div>
+
+        <!-- Panel: Echo -->
+        <div class="ae-pnl on" id="aePnl-echo">
+          <div class="ae-trow">
+            <span>تفعيل الصدى</span>
+            <label class="ae-sw"><input type="checkbox" id="aeEchoOn" onchange="aeRebuild()"><span class="ae-swt"></span></label>
+          </div>
+          <div class="ae-row">
+            <span class="ae-lbl">التأخير</span>
+            <input type="range" class="ae-sl" id="aeED" min="0.05" max="0.8" step="0.01" value="0.25"
+              oninput="aeShowVal('aeEDv',this.value,'s');aeRebuild()">
+            <span class="ae-val" id="aeEDv">0.25s</span>
+          </div>
+          <div class="ae-row">
+            <span class="ae-lbl">التكرار</span>
+            <input type="range" class="ae-sl" id="aeEF" min="0" max="0.85" step="0.01" value="0.3"
+              oninput="aeShowVal('aeEFv',this.value,'%');aeRebuild()">
+            <span class="ae-val" id="aeEFv">30%</span>
+          </div>
+          <div class="ae-row">
+            <span class="ae-lbl">المزج</span>
+            <input type="range" class="ae-sl" id="aeEM" min="0" max="1" step="0.01" value="0.3"
+              oninput="aeShowVal('aeEMv',this.value,'%');aeRebuild()">
+            <span class="ae-val" id="aeEMv">30%</span>
+          </div>
+        </div>
+
+        <!-- Panel: Reverb -->
+        <div class="ae-pnl" id="aePnl-reverb">
+          <div class="ae-trow">
+            <span>تفعيل الرنين</span>
+            <label class="ae-sw"><input type="checkbox" id="aeRevOn" onchange="aeRebuild()"><span class="ae-swt"></span></label>
+          </div>
+          <div class="ae-row">
+            <span class="ae-lbl">الحجم</span>
+            <input type="range" class="ae-sl" id="aeRS" min="0.2" max="5" step="0.1" value="1.5"
+              oninput="aeShowVal('aeRSv',this.value,'s');aeRebuild()">
+            <span class="ae-val" id="aeRSv">1.5s</span>
+          </div>
+          <div class="ae-row">
+            <span class="ae-lbl">المزج</span>
+            <input type="range" class="ae-sl" id="aeRM" min="0" max="1" step="0.01" value="0.25"
+              oninput="aeShowVal('aeRMv',this.value,'%');aeRebuild()">
+            <span class="ae-val" id="aeRMv">25%</span>
+          </div>
+        </div>
+
+        <!-- Panel: EQ -->
+        <div class="ae-pnl" id="aePnl-eq">
+          <div style="font-size:10px;color:rgba(255,255,255,0.25);text-align:center;margin-bottom:12px;">اسحب للضبط ( +12 / −12 dB )</div>
+          <div class="ae-eq">
+            <div class="ae-eqc"><span class="ae-eqv" id="aeQ0v">0</span><input type="range" class="ae-eqsl" min="-12" max="12" value="0" oninput="aeEQ(0,this.value)"><span class="ae-eqlbl">60Hz</span></div>
+            <div class="ae-eqc"><span class="ae-eqv" id="aeQ1v">0</span><input type="range" class="ae-eqsl" min="-12" max="12" value="0" oninput="aeEQ(1,this.value)"><span class="ae-eqlbl">250Hz</span></div>
+            <div class="ae-eqc"><span class="ae-eqv" id="aeQ2v">0</span><input type="range" class="ae-eqsl" min="-12" max="12" value="0" oninput="aeEQ(2,this.value)"><span class="ae-eqlbl">1kHz</span></div>
+            <div class="ae-eqc"><span class="ae-eqv" id="aeQ3v">0</span><input type="range" class="ae-eqsl" min="-12" max="12" value="0" oninput="aeEQ(3,this.value)"><span class="ae-eqlbl">4kHz</span></div>
+            <div class="ae-eqc"><span class="ae-eqv" id="aeQ4v">0</span><input type="range" class="ae-eqsl" min="-12" max="12" value="0" oninput="aeEQ(4,this.value)"><span class="ae-eqlbl">12kHz</span></div>
+          </div>
+        </div>
+
+        <!-- Panel: Advanced -->
+        <div class="ae-pnl" id="aePnl-adv">
+          <div class="ae-row">
+            <span class="ae-lbl">الصوت</span>
+            <input type="range" class="ae-sl" id="aeGain" min="0.1" max="3" step="0.05" value="1"
+              oninput="aeShowVal('aeGainV',this.value,'x');aeRebuild()">
+            <span class="ae-val" id="aeGainV">1.00x</span>
+          </div>
+          <div class="ae-row">
+            <span class="ae-lbl">السرعة</span>
+            <input type="range" class="ae-sl" id="aePitch" min="0.5" max="1.5" step="0.05" value="1"
+              oninput="aeShowVal('aePitchV',this.value,'x');aeRebuild()">
+            <span class="ae-val" id="aePitchV">1.00x</span>
+          </div>
+          <div class="ae-div"></div>
+          <div class="ae-trow">
+            <span>ضغط الديناميكية</span>
+            <label class="ae-sw"><input type="checkbox" id="aeComp" onchange="aeRebuild()"><span class="ae-swt"></span></label>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="ae-acts">
+          <button class="ae-apply" onclick="aeApply()">⚡ تطبيق</button>
+          <button class="ae-rst"   onclick="aeReset()" title="إعادة ضبط">↺</button>
+          <button class="ae-cnl"   onclick="closeAudioEditor()">إلغاء</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  /* ════════════════════════════════════════
+     AUDIO EDITOR ENGINE — self-contained
+  ════════════════════════════════════════ */
+  (function(){
+    var ctx    = null;   // AudioContext (lazy)
+    var buf    = null;   // original decoded AudioBuffer
+    var src    = null;   // current BufferSource
+    var playing= false;
+    var offset = 0;      // playback position seconds
+    var startT = 0;      // ctx.currentTime when play started
+    var compare= false;  // true = bypass effects
+    var raf    = null;
+    var eqG    = [0,0,0,0,0];
+    var EQ     = [[60,'lowshelf'],[250,'peaking'],[1000,'peaking'],[4000,'peaking'],[12000,'highshelf']];
+
+    /* ── tiny helpers ── */
+    function g(id){ return document.getElementById(id); }
+    function fmt(s){ var m=Math.floor(s/60),sc=Math.floor(s%60); return m+':'+(sc<10?'0':'')+sc; }
+    function dur(){ return buf ? buf.duration : 0; }
+
+    /* show slider value */
+    window.aeShowVal = function(vid, v, suf){
+      var n = parseFloat(v);
+      g(vid).textContent = suf==='%' ? Math.round(n*100)+'%'
+                         : suf==='s' ? n.toFixed(2)+'s'
+                         : suf==='x' ? n.toFixed(2)+'x'
+                         : v;
+    };
+
+    /* EQ band update */
+    window.aeEQ = function(i, v){
+      eqG[i] = parseFloat(v);
+      g('aeQ'+i+'v').textContent = (v>0?'+':'')+parseFloat(v).toFixed(0);
+      if(playing) rebuild();
+    };
+
+    /* tab switch */
+    window.aeSwitchTab = function(name, btn){
+      document.querySelectorAll('.ae-pnl').forEach(function(el){ el.classList.remove('on'); });
+      document.querySelectorAll('.ae-tab').forEach(function(el){ el.classList.remove('on'); });
+      g('aePnl-'+name).classList.add('on');
+      btn.classList.add('on');
+    };
+
+    /* ── open / close ── */
+    window.openAudioEditor = function(){
+      /* يلزم وجود ملف مرفوع */
+      if (!window._casAudioUrl && !window._casAudioFile){
+        if(typeof toast$==='function') toast$('⚠ ارفع ملف صوتي أولاً');
+        return;
+      }
+      g('aeModal').classList.add('show');
+      /* resume or create context */
+      if(!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+      ctx.resume().then(function(){ loadBuf(); });
+    };
+
+    window.closeAudioEditor = function(){
+      g('aeModal').classList.remove('show');
+      stop();
+    };
+
+    /* ── load & decode ── */
+    async function loadBuf(){
+      g('aeNotice').textContent = 'جاري تحميل الصوت...';
+      g('aeNotice').style.display = '';
+      try {
+        var ab;
+        if (window._casAudioFile) {
+          /* قراءة مباشرة من الملف بـ FileReader — الأضمن على كل المتصفحات */
+          ab = await new Promise(function(resolve, reject){
+            var reader = new FileReader();
+            reader.onload  = function(e){ resolve(e.target.result); };
+            reader.onerror = function(){ reject(new Error('FileReader error')); };
+            reader.readAsArrayBuffer(window._casAudioFile);
+          });
+        } else if (window._casAudioUrl) {
+          ab = await (await fetch(window._casAudioUrl)).arrayBuffer();
+        } else {
+          throw new Error('لا يوجد ملف صوتي');
+        }
+        buf    = await ctx.decodeAudioData(ab);
+        offset = 0;
+        drawWave();
+        updateUI(0);
+        g('aeNotice').style.display = 'none';
+      } catch(e){
+        g('aeNotice').textContent = '⚠ تعذّر تحميل الصوت: ' + e.message;
+        console.error('AE loadBuf:', e);
+      }
+    }
+
+    /* ── waveform ── */
+    function drawWave(){
+      var wrap = g('aeWaveWrap');
+      var cv   = g('aeWaveCanvas');
+      cv.width  = wrap.clientWidth  || 340;
+      cv.height = wrap.clientHeight || 64;
+      var cx   = cv.getContext('2d');
+      var data = buf.getChannelData(0);
+      var step = Math.ceil(data.length / cv.width);
+      var amp  = cv.height / 2;
+      cx.fillStyle = '#070e09';
+      cx.fillRect(0,0,cv.width,cv.height);
+      cx.strokeStyle = 'rgba(201,151,58,0.1)';
+      cx.lineWidth = 1;
+      cx.beginPath(); cx.moveTo(0,amp); cx.lineTo(cv.width,amp); cx.stroke();
+      var gr = cx.createLinearGradient(0,0,0,cv.height);
+      gr.addColorStop(0,'rgba(228,181,90,0.9)');
+      gr.addColorStop(.5,'rgba(201,151,58,0.6)');
+      gr.addColorStop(1,'rgba(228,181,90,0.9)');
+      cx.strokeStyle = gr; cx.lineWidth = 1;
+      cx.beginPath();
+      for(var i=0;i<cv.width;i++){
+        var mn=1,mx=-1;
+        for(var j=0;j<step;j++){ var d=data[i*step+j]||0; if(d<mn)mn=d; if(d>mx)mx=d; }
+        cx.moveTo(i,(1+mn)*amp); cx.lineTo(i,(1+mx)*amp);
+      }
+      cx.stroke();
+    }
+
+    /* ── stop ── */
+    function stop(){
+      if(raf){ cancelAnimationFrame(raf); raf=null; }
+      if(src){ try{ src.stop(); }catch(e){} src=null; }
+      if(playing){
+        /* save position */
+        var elapsed = ctx.currentTime - startT;
+        offset = Math.min(elapsed, dur());
+      }
+      playing = false;
+      var btn = g('aePlayBtn');
+      if(btn) btn.textContent = '▶';
+    }
+
+    /* ── play with full graph ── */
+    function play(){
+      if(!ctx || !buf) return;
+      stop();  /* stop first, offset already saved */
+
+      var gainV  = parseFloat(g('aeGain').value)  || 1;
+      var pitchV = parseFloat(g('aePitch').value) || 1;
+
+      src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.playbackRate.value = pitchV;
+
+      /* build chain */
+      var node = src;
+
+      /* 1. Gain */
+      var gn = ctx.createGain();
+      gn.gain.value = compare ? 1 : gainV;
+      node.connect(gn); node = gn;
+
+      if(!compare){
+        /* 2. EQ */
+        EQ.forEach(function(band,i){
+          var f = ctx.createBiquadFilter();
+          f.type=band[1]; f.frequency.value=band[0]; f.gain.value=eqG[i];
+          node.connect(f); node=f;
+        });
+
+        /* 3. Compressor */
+        if(g('aeComp').checked){
+          var comp = ctx.createDynamicsCompressor();
+          comp.threshold.value=-24; comp.knee.value=10; comp.ratio.value=4;
+          node.connect(comp); node=comp;
+        }
+
+        /* 4. Echo (delay feedback) */
+        if(g('aeEchoOn').checked){
+          var dlyT= parseFloat(g('aeED').value);
+          var fbV = parseFloat(g('aeEF').value);
+          var mixV= parseFloat(g('aeEM').value);
+          var dly = ctx.createDelay(3.0);
+          var fb  = ctx.createGain();
+          var wet = ctx.createGain();
+          var dry = ctx.createGain();
+          dly.delayTime.value=dlyT; fb.gain.value=fbV;
+          wet.gain.value=mixV; dry.gain.value=1-mixV;
+          node.connect(dry);   dry.connect(ctx.destination);
+          node.connect(dly);   dly.connect(fb); fb.connect(dly);
+          dly.connect(wet);    wet.connect(ctx.destination);
+          node=null; /* already routed to destination */
+        }
+
+        /* 5. Reverb (convolution) */
+        if(node && g('aeRevOn').checked){
+          var sz  = parseFloat(g('aeRS').value);
+          var rmix= parseFloat(g('aeRM').value);
+          var ir  = mkIR(sz);
+          var conv= ctx.createConvolver(); conv.buffer=ir;
+          var rw  = ctx.createGain(); rw.gain.value=rmix;
+          var rd  = ctx.createGain(); rd.gain.value=1-rmix;
+          node.connect(rd); rd.connect(ctx.destination);
+          node.connect(conv); conv.connect(rw); rw.connect(ctx.destination);
+          node=null;
+        }
+      }
+
+      if(node) node.connect(ctx.destination);
+
+      src.start(0, offset);
+      startT  = ctx.currentTime - offset;
+      playing = true;
+      g('aePlayBtn').textContent = '⏸';
+      src.onended = function(){
+        if(playing){ stop(); offset=0; updateUI(0); }
+      };
+      loop();
+    }
+
+    /* animation loop */
+    function loop(){
+      if(!playing||!ctx) return;
+      var cur = Math.min(ctx.currentTime - startT, dur());
+      updateUI(cur);
+      raf = requestAnimationFrame(loop);
+    }
+
+    function updateUI(cur){
+      var d   = dur()||1;
+      var pct = (cur/d*100).toFixed(2)+'%';
+      g('aeProgFill').style.width = pct;
+      g('aeWaveCur').style.left   = pct;
+      g('aeTimes').textContent    = fmt(cur)+' / '+fmt(d);
+    }
+
+    /* ── public controls ── */
+    window.aeTogglePlay = function(){
+      if(!buf){ if(typeof toast$==='function') toast$('⏳ الصوت لم يُحمَّل بعد'); return; }
+      if(ctx.state==='suspended') ctx.resume();
+      if(playing) stop(); else play();
+    };
+
+    window.aeSeekBar = function(e){
+      if(!buf) return;
+      var bar = g('aeProgBar');
+      var pct = (e.clientX - bar.getBoundingClientRect().left) / bar.clientWidth;
+      offset  = Math.max(0, Math.min(pct * dur(), dur()));
+      if(playing) play(); else updateUI(offset);
+    };
+
+    window.aeSeekWave = function(e){
+      if(!buf) return;
+      var wrap = g('aeWaveWrap');
+      var pct  = (e.clientX - wrap.getBoundingClientRect().left) / wrap.clientWidth;
+      offset   = Math.max(0, Math.min(pct * dur(), dur()));
+      if(playing) play(); else updateUI(offset);
+    };
+
+    window.aeSetCompare = function(on){
+      compare = on;
+      if(playing) play();
+    };
+
+    /* rebuild on any change */
+    window.aeRebuild = function(){
+      if(playing) play();
+    };
+
+    /* impulse response */
+    function mkIR(seconds){
+      var sr  = ctx.sampleRate;
+      var len = Math.floor(sr * seconds);
+      var ir  = ctx.createBuffer(2, len, sr);
+      for(var ch=0;ch<2;ch++){
+        var d = ir.getChannelData(ch);
+        for(var i=0;i<len;i++) d[i] = (Math.random()*2-1) * Math.pow(1-i/len, 2.5);
+      }
+      return ir;
+    }
+
+    /* ── presets ── */
+    var PRESETS = {
+      natural:{ echoOn:false,ed:.25,ef:.30,em:.30, revOn:false,rs:1.5,rm:.25, gain:1,   pitch:1,   comp:false, eq:[0,0,0,0,0]   },
+      clear:  { echoOn:false,ed:.20,ef:.20,em:.20, revOn:false,rs:1.0,rm:.15, gain:1.2, pitch:1,   comp:true,  eq:[0,-2,2,3,1]  },
+      studio: { echoOn:false,ed:.20,ef:.25,em:.25, revOn:true, rs:1.2,rm:.20, gain:1,   pitch:1,   comp:true,  eq:[2,1,0,1,2]   },
+      mosque: { echoOn:false,ed:.35,ef:.45,em:.45, revOn:true, rs:3.5,rm:.50, gain:1,   pitch:1,   comp:false, eq:[3,1,-1,0,1]  }
+    };
+
+    function setSlider(id,valId,v,suf){
+      var el=g(id); if(!el) return;
+      el.value=v; aeShowVal(valId,v,suf);
+    }
+
+    window.aePreset = function(name, btn){
+      var p=PRESETS[name]; if(!p) return;
+      document.querySelectorAll('.ae-p').forEach(function(b){ b.classList.remove('on'); });
+      btn.classList.add('on');
+      g('aeEchoOn').checked = p.echoOn;
+      setSlider('aeED','aeEDv', p.ed,'s');
+      setSlider('aeEF','aeEFv', p.ef,'%');
+      setSlider('aeEM','aeEMv', p.em,'%');
+      g('aeRevOn').checked = p.revOn;
+      setSlider('aeRS','aeRSv', p.rs,'s');
+      setSlider('aeRM','aeRMv', p.rm,'%');
+      setSlider('aeGain','aeGainV', p.gain,'x');
+      setSlider('aePitch','aePitchV', p.pitch,'x');
+      g('aeComp').checked = p.comp;
+      document.querySelectorAll('.ae-eqsl').forEach(function(sl,i){
+        sl.value=p.eq[i]; aeEQ(i,p.eq[i]);
+      });
+      if(playing) play();
+    };
+
+    window.aeReset = function(){ aePreset('natural', g('aePreset-natural')); };
+
+    /* ── apply: save settings for export ── */
+    window.aeApply = function(){
+      stop();
+      window._aeSettings = {
+        gain:    parseFloat(g('aeGain').value),
+        pitch:   parseFloat(g('aePitch').value),
+        compress:g('aeComp').checked,
+        echoOn:  g('aeEchoOn').checked,
+        ed:      parseFloat(g('aeED').value),
+        ef:      parseFloat(g('aeEF').value),
+        em:      parseFloat(g('aeEM').value),
+        revOn:   g('aeRevOn').checked,
+        rs:      parseFloat(g('aeRS').value),
+        rm:      parseFloat(g('aeRM').value),
+        eq:      eqG.slice()
+      };
+      closeAudioEditor();
+      if(typeof toast$==='function') toast$('✅ تم حفظ إعدادات الصوت');
+    };
+
+  })();
+  </script>
+
   </body>
 </html>
