@@ -9136,8 +9136,18 @@
         return;
       }
       g('aeModal').classList.add('show');
-      if(!ctx) ctx=new(window.AudioContext||window.webkitAudioContext)();
-      ctx.resume().then(function(){ if(!buf) _load(); });
+      // iOS: لازم AudioContext يتعمل مباشرة في user gesture
+      if(!ctx){
+        try { ctx=new(window.AudioContext||window.webkitAudioContext)(); }
+        catch(e){ ctx=new webkitAudioContext(); }
+      }
+      // iOS: resume لازم يكون synchronous في نفس الـ gesture
+      var resumePromise = ctx.resume ? ctx.resume() : Promise.resolve();
+      resumePromise.then(function(){
+        if(!buf) _load();
+      }).catch(function(){
+        if(!buf) _load(); // حاول على أي حال
+      });
     };
     window.closeAudioEditor=function(){
       g('aeModal').classList.remove('show');
@@ -9156,15 +9166,21 @@
         }
         if(notice) notice.textContent='جاري فك الترميز... ('+Math.round(ab.byteLength/1024)+'KB)';
         try {
-          ctx.decodeAudioData(ab.slice(0),
-            function(decoded){
-              buf=decoded; offset=0; _drawWave(); _updateUI(0);
-              if(notice) notice.style.display='none';
-            },
-            function(err){
-              if(notice) notice.textContent='⚠ فشل فك الترميز — تأكد إن الملف MP3/AAC/WAV صحيح ('+err+')';
-            }
-          );
+          // iOS Safari: decodeAudioData بيحتاج ArrayBuffer جديد كل مرة (slice)
+          var ab2 = ab.slice(0);
+          var decodeOk = function(decoded){
+            buf=decoded; offset=0; _drawWave(); _updateUI(0);
+            if(notice) notice.style.display='none';
+          };
+          var decodeFail = function(err){
+            if(notice) notice.textContent='⚠ فشل فك الترميز ('+err+')';
+          };
+          // iOS Safari يدعم فقط callback style (مش promise)
+          var result = ctx.decodeAudioData(ab2, decodeOk, decodeFail);
+          // المتصفحات الحديثة ترجع promise — نعمل catch عليها
+          if(result && typeof result.catch === 'function'){
+            result.catch(function(e){ decodeFail(e); });
+          }
         } catch(ex){
           if(notice) notice.textContent='⚠ خطأ: '+ex.message;
         }
@@ -9223,11 +9239,15 @@
 
     function _play(){
       if(!ctx||!buf) return;
+      // iOS: لو suspended — resume أولاً ثم العب
+      if(ctx.state==='suspended'){
+        ctx.resume().then(function(){ _play(); }).catch(function(e){ console.error('resume:',e); });
+        return;
+      }
       if(playing&&ctx) offset=Math.min(ctx.currentTime-startT,dur());
       if(raf){cancelAnimationFrame(raf);raf=null;}
       if(src){try{src.stop();}catch(e){}src=null;}
       playing=false;
-      if(ctx.state==='suspended') ctx.resume();
       if(offset>=dur()-0.05) offset=0;
 
       src=ctx.createBufferSource();
@@ -9341,6 +9361,17 @@
       _play();
     };
     window.aeReset=function(){window.aePreset('natural',g('aePreset-natural'));};
+    // iOS: استعادة AudioContext بعد رجوع التطبيق للمقدمة
+    document.addEventListener('visibilitychange', function(){
+      if(document.visibilityState==='visible' && ctx && ctx.state==='suspended'){
+        ctx.resume();
+      }
+    });
+    // iOS: استعادة بعد focus
+    window.addEventListener('focus', function(){
+      if(ctx && ctx.state==='suspended') ctx.resume();
+    });
+
     window.aeApply=function(){
       _stop();
       window._aeSettings={
