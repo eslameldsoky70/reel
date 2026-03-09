@@ -3242,8 +3242,7 @@
           <span class="logo-text">Islam Reels</span>
         </div>
         <div class="tabs">
-          <div class="tab on" onclick="switchTab('sheikh')">🎙 الشيوخ</div>
-          <div class="tab" onclick="switchTab('surah')">📖 السور</div>
+          <div class="tab on" onclick="switchTab('tilawa')">📖 التلاوة</div>
           <div class="tab" onclick="switchTab('bg')">🖼 الخلفيات</div>
         </div>
         <div id="sbar">اختر شيخاً وسورة للبدء</div>
@@ -3252,83 +3251,58 @@
       <div class="main">
         <!-- LEFT -->
         <div class="panel left">
-          <div id="tab-sheikh">
+          <!-- تاب التلاوة المدمج: السورة dropdown + القراء list -->
+          <div id="tab-tilawa">
+            <!-- القراء: list مع search وعداد -->
             <div class="sec">
-              <span class="lbl">اختر القارئ</span>
-              <div class="sh-grid" id="shGrid"></div>
+              <span class="lbl" id="sheikhLbl">اختر القارئ</span>
+              <div style="position:relative;margin-bottom:7px;">
+                <input class="inp" id="sheikhSearch" type="text" placeholder="🔍 ابحث عن قارئ..." oninput="filterSheikh(this.value)" style="padding-left:10px;"/>
+              </div>
+              <div id="shGrid" style="display:flex;flex-direction:column;gap:3px;max-height:260px;overflow-y:auto;"></div>
             </div>
-          </div>
-          <div id="tab-surah" style="display: none">
+            <!-- السورة: dropdown منسدل -->
             <div class="sec">
               <span class="lbl">اختر السورة</span>
-              <input
-                class="inp"
-                type="text"
-                placeholder="ابحث..."
-                oninput="filterS(this.value)"
-              />
-              <div class="s-list" id="sList"></div>
+              <select id="surahDropdown" class="inp" onchange="onSurahDropdownChange(this)" style="cursor:pointer;">
+                <option value="">— اختر السورة —</option>
+              </select>
             </div>
-            <div class="sec">
-              <span class="lbl">اختر الآيات</span>
-              <div class="ayah-picker" id="ayahPicker"></div>
-              <div style="display: flex; gap: 6px; margin-top: 8px">
-                <button
-                  onclick="apSelectAll()"
-                  style="
-                    flex: 1;
-                    padding: 6px;
-                    background: rgba(201, 151, 58, 0.1);
-                    border: 1px solid rgba(201, 151, 58, 0.3);
-                    border-radius: 6px;
-                    color: #e4b55a;
-                    font-family: &quot;Cairo&quot;, sans-serif;
-                    font-size: 11px;
-                    cursor: pointer;
-                  "
-                >
-                  ✓ تحديد الكل
-                </button>
-                <button
-                  onclick="apClearAll()"
-                  style="
-                    flex: 1;
-                    padding: 6px;
-                    background: rgba(255, 255, 255, 0.04);
-                    border: 1px solid rgba(255, 255, 255, 0.07);
-                    border-radius: 6px;
-                    color: #6e8878;
-                    font-family: &quot;Cairo&quot;, sans-serif;
-                    font-size: 11px;
-                    cursor: pointer;
-                  "
-                >
-                  ✕ إلغاء الكل
-                </button>
+            <!-- نطاق الآيات بأزرار +/- -->
+            <div class="sec" id="ayahRangeSec" style="display:none;">
+              <span class="lbl">نطاق الآيات</span>
+              <div style="display:flex;gap:8px;margin-bottom:8px;">
+                <div style="flex:1;">
+                  <span class="flbl">من الآية</span>
+                  <div style="display:flex;align-items:center;gap:4px;">
+                    <button onclick="adjustAyah('from',-1)" style="width:28px;height:30px;border-radius:6px;border:1px solid rgba(201,151,58,0.3);background:rgba(201,151,58,0.08);color:#e4b55a;font-size:16px;cursor:pointer;line-height:1;">−</button>
+                    <input type="number" id="vFromDisp" class="finp" style="flex:1;min-width:0;" value="1" min="1" oninput="onAyahRangeInput('from',this.value)"/>
+                    <button onclick="adjustAyah('from',1)" style="width:28px;height:30px;border-radius:6px;border:1px solid rgba(201,151,58,0.3);background:rgba(201,151,58,0.08);color:#e4b55a;font-size:16px;cursor:pointer;line-height:1;">+</button>
+                  </div>
+                </div>
+                <div style="flex:1;">
+                  <span class="flbl">إلى الآية</span>
+                  <div style="display:flex;align-items:center;gap:4px;">
+                    <button onclick="adjustAyah('to',-1)" style="width:28px;height:30px;border-radius:6px;border:1px solid rgba(201,151,58,0.3);background:rgba(201,151,58,0.08);color:#e4b55a;font-size:16px;cursor:pointer;line-height:1;">−</button>
+                    <input type="number" id="vToDisp" class="finp" style="flex:1;min-width:0;" value="7" min="1" oninput="onAyahRangeInput('to',this.value)"/>
+                    <button onclick="adjustAyah('to',1)" style="width:28px;height:30px;border-radius:6px;border:1px solid rgba(201,151,58,0.3);background:rgba(201,151,58,0.08);color:#e4b55a;font-size:16px;cursor:pointer;line-height:1;">+</button>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;gap:6px;margin-bottom:8px;">
+                <button onclick="apSelectAll()" style="flex:1;padding:6px;background:rgba(201,151,58,0.1);border:1px solid rgba(201,151,58,0.3);border-radius:6px;color:#e4b55a;font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer;">✓ تحديد الكل</button>
+                <button onclick="apClearAll()" style="flex:1;padding:6px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:6px;color:#6e8878;font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer;">✕ إلغاء الكل</button>
               </div>
               <input type="hidden" id="vFrom" value="1" />
               <input type="hidden" id="vTo" value="7" />
-              <button
-                onclick="playAll()"
-                style="
-                  width: 100%;
-                  padding: 9px;
-                  margin-top: 8px;
-                  background: linear-gradient(135deg, #245c38, #3ea066);
-                  border: none;
-                  border-radius: 7px;
-                  color: #fff;
-                  font-family: &quot;Cairo&quot;, sans-serif;
-                  font-size: 13px;
-                  font-weight: 700;
-                  cursor: pointer;
-                "
-              >
-                ▶ تشغيل المحدد
-              </button>
+              <button onclick="playAll()" style="width:100%;padding:9px;background:linear-gradient(135deg,#245c38,#3ea066);border:none;border-radius:7px;color:#fff;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">▶ تشغيل المحدد</button>
             </div>
+            <div class="sec"><div class="ayah-picker" id="ayahPicker"></div></div>
             <div class="sec"><div class="v-list" id="vList"></div></div>
           </div>
+          <!-- tabs قديمة مخفية للتوافق -->
+          <div id="tab-sheikh" style="display:none;"></div>
+          <div id="tab-surah" style="display:none;"></div>
           <div id="tab-bg" style="display: none">
             <div class="sec">
               <span class="lbl">اختر الخلفية</span>
@@ -3746,203 +3720,92 @@
 
         <!-- RIGHT -->
         <div class="panel right">
-          <div class="sec">
-            <span class="lbl">نمط الخط</span>
-            <select
-              class="inp"
-              id="fontSelect"
-              onchange="setFontFromSelect(this)"
-              style="margin-bottom: 10px"
-            >
-              <optgroup label="◈ كلاسيكي">
-                <option
-                  value="sch"
-                  style="font-family: &quot;Scheherazade New&quot;, serif"
-                  selected
-                >
-                  بِسْمِ اللَّهِ — عثماني
-                </option>
-                <option
-                  value="amiri"
-                  style="font-family: &quot;Amiri&quot;, serif"
-                >
-                  بسم الله — أميري
-                </option>
-                <option
-                  value="noto"
-                  style="font-family: &quot;Noto Naskh Arabic&quot;, serif"
-                >
-                  بسم الله — نسخ
-                </option>
-                <option
-                  value="lateef"
-                  style="font-family: &quot;Lateef&quot;, serif"
-                >
-                  بسم الله — لطيف
-                </option>
-              </optgroup>
-              <optgroup label="◈ حديث">
-                <option
-                  value="cairo"
-                  style="font-family: &quot;Cairo&quot;, sans-serif"
-                >
-                  بسم الله — كايرو
-                </option>
-                <option
-                  value="harmattan"
-                  style="font-family: &quot;Harmattan&quot;, sans-serif"
-                >
-                  بسم الله — هرمتان
-                </option>
-              </optgroup>
-              <optgroup label="◈ زخرفي">
-                <option
-                  value="kufi"
-                  style="font-family: &quot;Reem Kufi&quot;, sans-serif"
-                >
-                  بسم الله — كوفي
-                </option>
-              </optgroup>
-            </select>
-            <div style="display: flex; align-items: center; gap: 8px">
-              <span
-                class="flbl"
-                style="margin: 0; white-space: nowrap; min-width: 30px"
-                >أ</span
-              >
-              <input
-                type="range"
-                id="fontSizeSlider"
-                min="16"
-                max="52"
-                value="14"
-                oninput="setFontSize(this.value)"
-                style="flex: 1"
-              />
-              <span
-                class="flbl"
-                style="
-                  margin: 0;
-                  white-space: nowrap;
-                  min-width: 30px;
-                  font-size: 20px;
-                "
-                >أ</span
-              >
-              <span
-                id="fontSizeVal"
-                style="
-                  font-size: 11px;
-                  color: #e4b55a;
-                  min-width: 28px;
-                  text-align: center;
-                "
-                >14</span
-              >
+          <div class="sec" style="padding:0;">
+            <div onclick="toggleAcc(this)" style="display:flex;align-items:center;gap:9px;cursor:pointer;padding:13px 13px;user-select:none;">
+              <span style="font-size:17px;">✍️</span>
+              <span style="font-size:13px;font-weight:700;color:#b5c4bc;flex:1;transition:color 0.2s;">إعدادات الخط</span>
+              <span class="acc-arrow" style="color:#6e8878;font-size:11px;transition:transform 0.2s,color 0.2s;">▶</span>
             </div>
-          </div>
-          <div class="sec">
-            <span class="lbl">لون النص</span>
-            <div class="clr-wheel-wrap">
-              <div class="clr-picker-row">
-                <div
-                  class="clr-preview"
-                  id="clrPreview"
-                  style="background: #ffffff"
-                ></div>
-                <span class="clr-hex" id="clrHex">#ffffff</span>
+            <div style="display:none;padding:0 13px 12px;">
+              <!-- نمط الخط -->
+              <span class="flbl" style="margin-bottom:4px;">نمط الخط</span>
+              <select class="inp" id="fontSelect" onchange="setFontFromSelect(this)" style="margin-bottom:10px;">
+                <optgroup label="◈ كلاسيكي">
+                  <option value="sch" style="font-family: &quot;Scheherazade New&quot;, serif" selected>بِسْمِ اللَّهِ — عثماني</option>
+                  <option value="amiri" style="font-family: &quot;Amiri&quot;, serif">بسم الله — أميري</option>
+                  <option value="noto" style="font-family: &quot;Noto Naskh Arabic&quot;, serif">بسم الله — نسخ</option>
+                  <option value="lateef" style="font-family: &quot;Lateef&quot;, serif">بسم الله — لطيف</option>
+                </optgroup>
+                <optgroup label="◈ حديث">
+                  <option value="cairo" style="font-family: &quot;Cairo&quot;, sans-serif">بسم الله — كايرو</option>
+                  <option value="harmattan" style="font-family: &quot;Harmattan&quot;, sans-serif">بسم الله — هرمتان</option>
+                </optgroup>
+                <optgroup label="◈ زخرفي">
+                  <option value="kufi" style="font-family: &quot;Reem Kufi&quot;, sans-serif">بسم الله — كوفي</option>
+                </optgroup>
+              </select>
+              <!-- حجم الخط -->
+              <span class="flbl" style="margin-bottom:4px;">حجم الخط</span>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                <span class="flbl" style="margin:0;white-space:nowrap;min-width:30px;">أ</span>
+                <input type="range" id="fontSizeSlider" min="16" max="52" value="14" oninput="setFontSize(this.value)" style="flex:1;" />
+                <span class="flbl" style="margin:0;white-space:nowrap;min-width:30px;font-size:20px;">أ</span>
+                <span id="fontSizeVal" style="font-size:11px;color:#e4b55a;min-width:28px;text-align:center;">14</span>
               </div>
-              <input
-                type="color"
-                id="colorPicker"
-                value="#ffffff"
-                oninput="pickCustomColor(this.value)"
-              />
+              <!-- لون النص -->
+              <span class="flbl" style="margin-bottom:4px;">لون النص</span>
+              <div class="clr-wheel-wrap">
+                <div class="clr-picker-row">
+                  <div class="clr-preview" id="clrPreview" style="background:#ffffff;"></div>
+                  <span class="clr-hex" id="clrHex">#ffffff</span>
+                </div>
+                <input type="color" id="colorPicker" value="#ffffff" oninput="pickCustomColor(this.value)" />
+              </div>
             </div>
           </div>
-          <div class="sec">
-            <span class="lbl">التأثيرات</span>
+          <div class="sec" style="padding:0;">
+            <div onclick="toggleAcc(this)" style="display:flex;align-items:center;gap:9px;cursor:pointer;padding:13px 13px;user-select:none;">
+              <span style="font-size:17px;">✨</span>
+              <span style="font-size:13px;font-weight:700;color:#b5c4bc;flex:1;transition:color 0.2s;">التأثيرات</span>
+              <span class="acc-arrow" style="color:#6e8878;font-size:11px;transition:transform 0.2s,color 0.2s;">▶</span>
+            </div>
+            <div style="display:none;">
             <div class="sw-row" onclick="toggleFx('stars')">
               <span class="sw-l">✦ نجوم لامعة</span>
-              <div
-                class="sw"
-                id="sw-stars"
-                style="
-                  background: linear-gradient(135deg, #245c38, #3ea066);
-                  border: 1px solid rgba(62, 160, 102, 0.4);
-                "
-              >
+              <div class="sw" id="sw-stars" style="background: linear-gradient(135deg, #245c38, #3ea066); border: 1px solid rgba(62, 160, 102, 0.4);">
                 <div class="sw-k" style="right: 3px"></div>
               </div>
             </div>
             <div class="sw-row" onclick="toggleFx('glow')">
               <span class="sw-l">🌟 هالة نورانية</span>
-              <div
-                class="sw"
-                id="sw-glow"
-                style="
-                  background: linear-gradient(135deg, #245c38, #3ea066);
-                  border: 1px solid rgba(62, 160, 102, 0.4);
-                "
-              >
+              <div class="sw" id="sw-glow" style="background: linear-gradient(135deg, #245c38, #3ea066); border: 1px solid rgba(62, 160, 102, 0.4);">
                 <div class="sw-k" style="right: 3px"></div>
               </div>
             </div>
             <div class="sw-row" onclick="toggleFx('particles')">
               <span class="sw-l">✨ جسيمات متطايرة</span>
-              <div
-                class="sw"
-                id="sw-particles"
-                style="
-                  background: linear-gradient(135deg, #245c38, #3ea066);
-                  border: 1px solid rgba(62, 160, 102, 0.4);
-                "
-              >
+              <div class="sw" id="sw-particles" style="background: linear-gradient(135deg, #245c38, #3ea066); border: 1px solid rgba(62, 160, 102, 0.4);">
                 <div class="sw-k" style="right: 3px"></div>
               </div>
             </div>
             <div class="sw-row" onclick="toggleFx('border')">
               <span class="sw-l">🔲 إطار زخرفي</span>
-              <div
-                class="sw"
-                id="sw-border"
-                style="
-                  background: linear-gradient(135deg, #245c38, #3ea066);
-                  border: 1px solid rgba(62, 160, 102, 0.4);
-                "
-              >
+              <div class="sw" id="sw-border" style="background: linear-gradient(135deg, #245c38, #3ea066); border: 1px solid rgba(62, 160, 102, 0.4);">
                 <div class="sw-k" style="right: 3px"></div>
               </div>
             </div>
             <div class="sw-row" onclick="toggleFx('wave')">
               <span class="sw-l">🎵 موجة صوتية</span>
-              <div
-                class="sw"
-                id="sw-wave"
-                style="
-                  background: linear-gradient(135deg, #245c38, #3ea066);
-                  border: 1px solid rgba(62, 160, 102, 0.4);
-                "
-              >
+              <div class="sw" id="sw-wave" style="background: linear-gradient(135deg, #245c38, #3ea066); border: 1px solid rgba(62, 160, 102, 0.4);">
                 <div class="sw-k" style="right: 3px"></div>
               </div>
             </div>
-            <div
-              class="sw-row"
-              onclick="toggleFx('fadein')"
-              style="border-bottom: none"
-            >
+            <div class="sw-row" onclick="toggleFx('fadein')" style="border-bottom: none">
               <span class="sw-l">🌫 ظهور تدريجي للنص</span>
-              <div
-                class="sw"
-                id="sw-fadein"
-                style="
-                  background: linear-gradient(135deg, #245c38, #3ea066);
-                  border: 1px solid rgba(62, 160, 102, 0.4);
-                "
-              >
+              <div class="sw" id="sw-fadein" style="background: linear-gradient(135deg, #245c38, #3ea066); border: 1px solid rgba(62, 160, 102, 0.4);">
                 <div class="sw-k" style="right: 3px"></div>
               </div>
+            </div>
             </div>
           </div>
           <div class="sec">
@@ -4271,18 +4134,10 @@
         <button
           class="mob-nav-btn"
           id="mnLeft"
-          onclick="mobShow('left', 'sheikh')"
-        >
-          <span class="mn-ico">🎙</span>
-          <span>الشيوخ</span>
-        </button>
-        <button
-          class="mob-nav-btn"
-          id="mnSurah"
-          onclick="mobShow('left', 'surah')"
+          onclick="mobShow('left', 'tilawa')"
         >
           <span class="mn-ico">📖</span>
-          <span>السور</span>
+          <span>التلاوة</span>
         </button>
         <button
           class="mob-nav-btn active"
@@ -7248,17 +7103,38 @@
       }
 
       /* ══ RENDER ══ */
-      function renderShuyukh() {
-        $("shGrid").innerHTML = SHUYUKH.map(
-          (sh, i) =>
-            `<div class="sh-card" onclick="pickSh(${i})"><div class="sh-f">${sh.flag}</div><div class="sh-n">${sh.name}</div><div class="sh-c">${sh.country}</div></div>`,
-        ).join("");
+      function _updateSheikhCount() {
+        const total = SHUYUKH.length;
+        const q = (document.getElementById('sheikhSearch')||{}).value || '';
+        const shown = q ? SHUYUKH.filter(sh => sh.name.includes(q) || (sh.country||'').includes(q)).length : total;
+        const lbl = document.getElementById('sheikhLbl');
+        if (lbl) lbl.textContent = `اختر القارئ (${shown})`;
+      }
+      function renderShuyukh(list) {
+        list = list || SHUYUKH;
+        const grid = $("shGrid");
+        grid.innerHTML = list.map((sh, _) => {
+          const i = SHUYUKH.indexOf(sh);
+          const isOn = S.sh && S.sh === sh;
+          return `<div class="s-item${isOn?' on':''}" onclick="pickSh(${i})" style="display:flex;align-items:center;gap:8px;padding:7px 9px;">
+            <div style="font-size:18px;flex-shrink:0;">${sh.flag}</div>
+            <div style="flex:1;">
+              <div style="font-size:12px;font-weight:600;color:#e4b55a;">${sh.name}</div>
+              <div style="font-size:10px;color:#6e8878;">${sh.country||''}</div>
+            </div>
+            ${isOn?'<div style="color:#3ea066;font-size:14px;">✓</div>':''}
+          </div>`;
+        }).join('');
+        _updateSheikhCount();
+      }
+      function filterSheikh(q) {
+        const list = q ? SHUYUKH.filter(sh => sh.name.includes(q) || (sh.country||'').includes(q)) : SHUYUKH;
+        renderShuyukh(list);
+        _updateSheikhCount();
       }
       function pickSh(i) {
         S.sh = SHUYUKH[i];
-        document
-          .querySelectorAll(".sh-card")
-          .forEach((c, j) => c.classList.toggle("on", j === i));
+        renderShuyukh();
         $("elSh").textContent = "تلاوة: " + S.sh.name;
         $("npS").style.color = "";
         toast$("✓ " + S.sh.name);
@@ -7268,20 +7144,26 @@
         }
       }
 
-      function renderSurahs(list = SURAHS) {
-        $("sList").innerHTML = list
-          .map(
-            (sr) =>
-              `<div class="s-item ${S.surah?.n === sr.n ? "on" : ""}" onclick="pickSurah(${sr.n})"><div class="s-num">${sr.n}</div><div class="s-ar">${sr.ar}</div><div class="s-v">${sr.v}</div></div>`,
-          )
-          .join("");
+      function renderSurahDropdown() {
+        const sel = document.getElementById('surahDropdown');
+        if (!sel) return;
+        sel.innerHTML = '<option value="">— اختر السورة —</option>' +
+          SURAHS.map(sr =>
+            `<option value="${sr.n}"${S.surah?.n===sr.n?' selected':''}>${sr.n}. ${sr.ar} (${sr.v} آية)</option>`
+          ).join('');
+      }
+      function onSurahDropdownChange(sel) {
+        const n = parseInt(sel.value);
+        if (n) pickSurah(n);
+      }
+
+      function renderSurahs(list) {
+        // now renders the dropdown only (sList is hidden)
+        renderSurahDropdown();
       }
       function filterS(q) {
-        renderSurahs(
-          q
-            ? SURAHS.filter((s) => s.ar.includes(q) || String(s.n).includes(q))
-            : SURAHS,
-        );
+        // kept for backward compat
+        renderSurahDropdown();
       }
 
       function pickSurah(n) {
@@ -7292,9 +7174,17 @@
         S.vTo = sr.v;
         $("vFrom").value = 1;
         $("vTo").value = sr.v;
+        // Update display inputs
+        const fd = document.getElementById('vFromDisp');
+        const td = document.getElementById('vToDisp');
+        if (fd) { fd.value = 1; fd.max = sr.v; }
+        if (td) { td.value = sr.v; td.max = sr.v; }
+        // Show ayah sections
+        const sec = document.getElementById('ayahRangeSec');
+        if (sec) sec.style.display = '';
         apSelected.clear();
         for (let i = 1; i <= sr.v; i++) apSelected.add(i);
-        renderSurahs();
+        renderSurahDropdown();
         renderVList();
         renderAyahPicker();
         prefetchSurahTexts(sr.n, sr.v).then(() => renderAyahPicker());
@@ -7313,6 +7203,10 @@
         S.vTo = arr[arr.length - 1];
         $("vFrom").value = S.vFrom;
         $("vTo").value = S.vTo;
+        const fd = document.getElementById('vFromDisp');
+        const td = document.getElementById('vToDisp');
+        if (fd) fd.value = S.vFrom;
+        if (td) td.value = S.vTo;
         // Keep S.active pointing to the same ayah number in the new queue
         const currentAyahNum = getPlayQueue()[S.active];
         if (currentAyahNum !== undefined) {
@@ -7379,12 +7273,51 @@
         S.vTo = to;
         $("vFrom").value = from;
         $("vTo").value = to;
+        const fd = document.getElementById('vFromDisp');
+        const td = document.getElementById('vToDisp');
+        if (fd) fd.value = from;
+        if (td) td.value = to;
         apSelected.clear();
         for (let i = from; i <= to; i++) apSelected.add(i);
         renderAyahPicker();
         S.active = 0;
         curUrl = "";
         loadAudio(false);
+      }
+
+      function adjustAyah(which, delta) {
+        if (!S.surah) return;
+        const max = S.surah.v;
+        let from = +$("vFrom").value || 1;
+        let to = +$("vTo").value || max;
+        if (which === 'from') {
+          from = Math.max(1, Math.min(from + delta, to));
+        } else {
+          to = Math.max(from, Math.min(to + delta, max));
+        }
+        $("vFrom").value = from;
+        $("vTo").value = to;
+        const fd = document.getElementById('vFromDisp');
+        const td = document.getElementById('vToDisp');
+        if (fd) fd.value = from;
+        if (td) td.value = to;
+        onRange();
+      }
+
+      function onAyahRangeInput(which, val) {
+        if (!S.surah) return;
+        const max = S.surah.v;
+        let from = +$("vFrom").value || 1;
+        let to = +$("vTo").value || max;
+        if (which === 'from') from = Math.max(1, Math.min(+val || 1, to));
+        else to = Math.max(from, Math.min(+val || max, max));
+        $("vFrom").value = from;
+        $("vTo").value = to;
+        const fd = document.getElementById('vFromDisp');
+        const td = document.getElementById('vToDisp');
+        if (fd) fd.value = from;
+        if (td) td.value = to;
+        onRange();
       }
 
       function renderVList() {
@@ -7837,10 +7770,29 @@
         if (ov) ov.style.background = `rgba(0,0,0,${val / 100})`;
       }
 
+      function toggleAcc(hdr) {
+        const body = hdr.nextElementSibling;
+        const arrow = hdr.querySelector('.acc-arrow');
+        const label = hdr.querySelector('span:nth-child(2)');
+        const isOpen = body.style.display !== 'none';
+        body.style.display = isOpen ? 'none' : 'block';
+        arrow.style.transform = isOpen ? '' : 'rotate(90deg)';
+        arrow.style.color = isOpen ? '#6e8878' : '#e4b55a';
+        label.style.color = isOpen ? '#b5c4bc' : '#e4b55a';
+      }
       function switchTab(t) {
-        ["sheikh", "surah", "bg"].forEach((id, i) => {
-          $("tab-" + id).style.display = id === t ? "block" : "none";
-          document.querySelectorAll(".tab")[i].classList.toggle("on", id === t);
+        // Map old tab names to new tilawa tab
+        if (t === 'sheikh' || t === 'surah') t = 'tilawa';
+        ["tilawa", "bg"].forEach((id, i) => {
+          const el = document.getElementById("tab-" + id);
+          if (el) el.style.display = id === t ? "block" : "none";
+          const tabEl = document.querySelectorAll(".tab")[i];
+          if (tabEl) tabEl.classList.toggle("on", id === t);
+        });
+        // Also hide legacy tabs
+        ["sheikh","surah"].forEach(id => {
+          const el = document.getElementById("tab-"+id);
+          if(el) el.style.display="none";
         });
       }
       function setFont(btn, f) {
@@ -8320,8 +8272,10 @@
 
       /* ══ INIT ══ */
       renderShuyukh();
+      renderSurahDropdown();
       renderSurahs();
       renderBGs();
+      switchTab('tilawa'); // start on tilawa tab
       startDrawLoop(); // بدء الـ draw loop مع بداية الصفحة (للمعاينة)
 
       /* ══ MOBILE NAVIGATION ══ */
@@ -8344,7 +8298,7 @@
           // Switch the tab inside the left panel
           if (tab) switchTab(tab);
           // Highlight correct button
-          const map = { sheikh: "mnLeft", surah: "mnSurah", bg: "mnBg" };
+          const map = { tilawa: "mnLeft", sheikh: "mnLeft", surah: "mnLeft", bg: "mnBg" };
           if (map[tab])
             document.getElementById(map[tab]).classList.add("active");
         } else if (panel === "right") {
