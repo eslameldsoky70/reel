@@ -9239,11 +9239,6 @@
 
     function _play(){
       if(!ctx||!buf) return;
-      // iOS: لو suspended — resume أولاً ثم العب
-      if(ctx.state==='suspended'){
-        ctx.resume().then(function(){ _play(); }).catch(function(e){ console.error('resume:',e); });
-        return;
-      }
       if(playing&&ctx) offset=Math.min(ctx.currentTime-startT,dur());
       if(raf){cancelAnimationFrame(raf);raf=null;}
       if(src){try{src.stop();}catch(e){}src=null;}
@@ -9297,8 +9292,10 @@
       }
       if(node) node.connect(ctx.destination);
 
-      src.start(0,offset);
-      startT=ctx.currentTime-offset;
+      // iOS: نضيف تأخير صغير بعد resume عشان الـ context يبدأ فعلاً
+      var startDelay = (ctx.state==='running') ? 0 : 0.1;
+      src.start(startDelay, offset);
+      startT = ctx.currentTime - offset + startDelay;
       playing=true;
       g('aePlayBtn').textContent='⏸';
       src.onended=function(){
@@ -9313,8 +9310,13 @@
 
     window.aeTogglePlay=function(){
       if(!buf){if(typeof toast$==='function')toast$('⏳ الصوت لم يُحمَّل بعد');return;}
-      if(ctx&&ctx.state==='suspended'){ctx.resume().then(function(){if(playing)_stop();else _play();});return;}
-      if(playing)_stop();else _play();
+      // iOS: ctx لازم يتعمل أو يتفعل في نفس الـ user gesture
+      if(!ctx){
+        try{ ctx=new(window.AudioContext||window.webkitAudioContext)(); }catch(e){}
+      }
+      if(ctx && ctx.resume){ ctx.resume(); } // sync call — iOS بيحتاجه في نفس الـ gesture
+      if(playing){ _stop(); return; }
+      _play();
     };
     window.aeSeekBar=function(e){
       if(!buf)return;
