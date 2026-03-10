@@ -6967,25 +6967,34 @@
       });
       audio.addEventListener("playing", () => {
         S.playing = true;
+        S._playingAt = performance.now(); // لحظة بداية التشغيل الفعلية
+        S._playingAtAudio = audio.currentTime;
         $("mBtn").innerHTML = "⏸";
         $("mBtn").style.background = "linear-gradient(135deg,#5c2424,#a03030)";
         $("pdot").style.display = "block";
         setSbar("▶ " + S.surah?.ar + " — آية " + arN(curAN()), "#5ec285");
-        if (verseChunks.length > 1 && audio.duration)
-          startChunkCycle(audio.duration);
-        if (S.surah && S.active >= 0)
-          fetchWordTiming(S.surah.n, curAN()).then((segs) => {
-            if (segs) startWordHighlight(segs, S.color);
-          });
+        S._chunkCycleStarted = false;
+      });
+      audio.addEventListener("durationchange", () => {});
+      audio.addEventListener("timeupdate", () => {
+        if (!S.playing || verseChunks.length <= 1) return;
+        if (S._chunkCycleStarted) return;
+        if (!audio.duration || !isFinite(audio.duration)) return;
+        S._chunkCycleStarted = true;
+        // احسب الوقت الفعلي من لحظة playing مش من timeupdate
+        const realElapsedMs = S._playingAt
+          ? (S._playingAtAudio * 1000) + (performance.now() - S._playingAt)
+          : audio.currentTime * 1000;
+        startChunkCycle(audio.duration, realElapsedMs);
       });
       audio.addEventListener("seeked", () => {
-        if (S.playing && S.surah && S.active >= 0)
-          fetchWordTiming(S.surah.n, curAN()).then((s) => {
-            if (s) startWordHighlight(s, S.color);
-          });
+        if (S.playing && S.surah && S.active >= 0) {
+          // seeked — no word highlight
+        }
       });
       audio.addEventListener("pause", () => {
         S.playing = false;
+        S._chunkCycleStarted = false;
         $("mBtn").innerHTML = "▶";
         $("mBtn").style.background = "linear-gradient(135deg,#245c38,#3ea066)";
         $("pdot").style.display = "none";
@@ -7188,7 +7197,7 @@
         renderVList();
         renderAyahPicker();
         prefetchSurahTexts(sr.n, sr.v).then(() => renderAyahPicker());
-        if (S.sh?.qdcId) fetchWordTiming(sr.n, 1).catch(() => {});
+        // word timing prefetch disabled
         S.active = surahHasLeadingBasmala(sr.n) ? -1 : 0;
         loadAudio(true);
       }
@@ -7471,7 +7480,8 @@
           wordList || (text || "").trim().split(/\s+/).filter(Boolean);
         if (!words.length) return [];
         const n = words.length;
-        const sz = n <= 30 ? n : n <= 45 ? Math.ceil(n / 2) : Math.ceil(n / 3);
+        // حد أقصى 15 كلمة لكل مقطع
+        const sz = Math.min(15, n <= 30 ? n : n <= 45 ? Math.ceil(n / 2) : Math.ceil(n / 3));
         const chunks = [];
         for (let i = 0; i < words.length; i += sz)
           chunks.push({ words: words.slice(i, i + sz), startIdx: i });
@@ -7518,44 +7528,46 @@
           applyAndShow();
           markCstateDirty();
         } else {
-          vAr.style.opacity = "0";
-          vAr.style.transition = "opacity .2s ease";
-          setTimeout(() => {
-            applyAndShow();
-            markCstateDirty();
-          }, 220);
+          vAr.style.transition = "none";
+          vAr.style.opacity = "1";
+          applyAndShow();
+          markCstateDirty();
         }
       }
 
-      function startChunkCycle(totalDuration, instant = false) {
+      function startChunkCycle(totalDuration, audioNowMs, instant = false) {
         clearChunkCycle();
         if (verseChunks.length <= 1) return;
 
-        // وزّع الوقت بالنسبة لعدد الكلمات في كل جزء
-        const totalWords = verseChunks.reduce((s, c) => s + c.words.length, 0);
-        const msPerWord = (totalDuration * 1000) / totalWords;
-        const FADE_OFFSET = instant ? 0 : 220;
+        if (audioNowMs === undefined) audioNowMs = (audio.currentTime || 0) * 1000;
+        const segs = window._curSegments;
 
-        let ci = 1;
-        function scheduleNext() {
-          if (ci >= verseChunks.length) return;
-          const wordsBeforeChunk = verseChunks[ci].startIdx;
-          const chunkStartMs = wordsBeforeChunk * msPerWord;
-          const elapsed = (audio.currentTime || 0) * 1000;
-          const delay = Math.max(50, chunkStartMs - elapsed - FADE_OFFSET);
-          chunkTimer = setTimeout(() => {
-            showChunk(ci, instant);
-            ci++;
-            scheduleNext();
-          }, delay);
+        for (let ci = 1; ci < verseChunks.length; ci++) {
+          const firstWordIdx = verseChunks[ci].startIdx;
+          let chunkStartMs;
+
+          if (segs && segs[firstWordIdx]) {
+            // استخدم التوقيت الحقيقي للكلمة الأولى في المقطع
+            chunkStartMs = segs[firstWordIdx][1]; // wStart بالـ ms
+          } else {
+            // fallback: توزيع بالنسبة للكلمات
+            const totalWords = verseChunks.reduce((s, c) => s + c.words.length, 0);
+            const msPerWord = (totalDuration * 1000) / totalWords;
+            chunkStartMs = firstWordIdx * msPerWord;
+          }
+
+          const delay = Math.max(50, chunkStartMs - audioNowMs);
+          const idx = ci;
+          chunkTimers.push(setTimeout(() => {
+            showChunk(idx, instant);
+          }, delay));
         }
-        scheduleNext();
       }
+      let chunkTimers = [];
       function clearChunkCycle() {
-        if (chunkTimer) {
-          clearTimeout(chunkTimer);
-          chunkTimer = null;
-        }
+        chunkTimers.forEach(clearTimeout);
+        chunkTimers = [];
+        chunkTimer = null;
       }
       let _hlRAF = null,
         _hlLast = -1;
@@ -7565,9 +7577,10 @@
         const segs = segments,
           clr = color || S.color || "#fff";
         _hlLast = -1;
+        const origin = S.ayahStartTime || 0;
         function tick() {
           if (!S.playing) return;
-          const now = audio.currentTime * 1000;
+          const now = (audio.currentTime - origin) * 1000;
           let a = -1;
           for (const [wi, ws, we] of segs)
             if (now >= ws && now < we) {
@@ -7662,11 +7675,13 @@
           wordList ? wordList.join(" ") : ar,
           wordList,
         );
+        // احفظ الـ segments عشان نستخدمها في توقيت المقاطع
+        window._curSegments = segments || null;
         currentChunkIdx = 0;
         $("vRef").textContent = `﴿ ${S.surah.ar} : ${arN(ayahNum)} ﴾`;
         $("npT").textContent = S.surah.ar + " — آية " + arN(ayahNum);
         if (verseChunks.length > 0) showChunk(0, false);
-        if (segments && S.playing) startWordHighlight(segments, S.color);
+        if (segments && S.playing) { /* highlight disabled */ }
       }
 
       function updateScreen() {
