@@ -7,9 +7,9 @@
       script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com blob:;
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src 'self' https://fonts.gstatic.com data:;
-      connect-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://api.alquran.cloud https://api.qurancdn.com https://everyayah.com https://cdn.islamic.network https://verses.quran.com https://al-quran.info https://quran-api.pages.dev;
+      connect-src *;
       img-src 'self' data: blob:;
-      media-src 'self' blob: https://everyayah.com https://cdn.islamic.network https://verses.quran.com;
+      media-src * blob: data:;
       worker-src 'self' blob:;
       child-src blob:;
     ">
@@ -42,9 +42,8 @@
       window._mp4MuxerLoaded = false;
       (function () {
         const SOURCES = [
-          "/libs/mp4-muxer.js",                                              // محلي
-          "https://cdn.jsdelivr.net/npm/mp4-muxer@5/build/mp4-muxer.js",    // CDN 1
-          "https://unpkg.com/mp4-muxer@5/build/mp4-muxer.js"                // CDN 2
+          "https://cdn.jsdelivr.net/npm/mp4-muxer@5/build/mp4-muxer.js",
+          "https://unpkg.com/mp4-muxer@5/build/mp4-muxer.js"
         ];
         let idx = 0;
         function tryNext() {
@@ -1538,7 +1537,8 @@
         border-radius: 20px;
         width: 100%;
         max-width: 820px;
-        max-height: 92vh;
+        height: 88vh;
+        max-height: 640px;
         overflow: hidden;
         display: flex;
         flex-direction: column;
@@ -1577,6 +1577,7 @@
         text-align: center;
         line-height: 1.7;
         border-bottom: 1px solid rgba(255,255,255,0.05);
+        flex-shrink: 0;
       }
       .mas-body {
         display: flex;
@@ -1590,8 +1591,9 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 30px 24px;
+        padding: 20px 24px;
         position: relative;
+        overflow: hidden;
       }
       .mas-counter {
         font-size: 11px;
@@ -1601,12 +1603,13 @@
       }
       .mas-ayah-display {
         font-family: 'Scheherazade New', serif;
-        font-size: clamp(22px, 3.5vw, 34px);
+        font-size: clamp(18px, 2.8vw, 28px);
         color: #f5e6bc;
         text-align: center;
         line-height: 1.9;
         direction: rtl;
         max-width: 480px;
+        overflow: visible;
         text-shadow: 0 0 30px rgba(201,151,58,0.25);
       }
       .mas-divider {
@@ -1675,6 +1678,7 @@
         padding: 8px 20px;
         border-top: 1px solid rgba(255,255,255,0.05);
         background: rgba(0,0,0,0.15);
+        flex-shrink: 0;
       }
       .mas-audio-info {
         flex: 1;
@@ -1724,6 +1728,7 @@
         border-radius: 12px;
         cursor: pointer;
         transition: all .2s;
+        flex-shrink: 0;
       }
       .mas-btn-start {
         background: linear-gradient(135deg, #c9973a, #e4b55a);
@@ -1746,6 +1751,7 @@
         gap: 8px;
         padding: 10px 20px 16px;
         border-top: 1px solid rgba(255,255,255,0.07);
+        flex-shrink: 0;
       }
       .mas-btn-save {
         background: linear-gradient(135deg, #c9973a, #b8862a);
@@ -1786,6 +1792,34 @@
         transition: all .2s;
       }
       .mas-btn-cancel:hover { color: #ff6b6b; border-color: rgba(255,80,80,0.3); }
+
+      /* ── chunk mode toggle ── */
+      .mas-chunk-toggle {
+        display: flex; align-items: center; justify-content: space-between;
+        background: rgba(201,151,58,0.08);
+        border-top: 1px solid rgba(201,151,58,0.2);
+        border-bottom: 1px solid rgba(201,151,58,0.2);
+        padding: 10px 20px; font-size: 12px;
+        color: rgba(255,255,255,0.8); flex-shrink: 0;
+      }
+      .mas-chunk-toggle span { flex: 1; }
+      .mas-chunk-badge {
+        background: linear-gradient(135deg,#c9973a,#e4b55a);
+        color: #000; font-size: 9px; font-weight: 700;
+        padding: 2px 7px; border-radius: 8px; margin-left: 6px;
+      }
+      .mas-chunk-dots {
+        display: flex; gap: 5px; justify-content: center;
+        margin: 8px 0 0; min-height: 10px;
+      }
+      .mas-chunk-dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: rgba(255,255,255,0.18); transition: background .2s, transform .2s;
+      }
+      .mas-chunk-dot.done    { background: #3ea066; }
+      .mas-chunk-dot.current { background: #c9973a; transform: scale(1.3); }
+      .mas-chunk-prev { color: rgba(255,255,255,0.2) !important; }
+      .mas-chunk-cur  { color: #f5e6bc !important; font-weight: 700; }
 
       .sync-panel {
         position: fixed;
@@ -3862,9 +3896,6 @@
                 </div>
                 <span class="cas-time" id="cas-time">0:00</span>
               </div>
-              <button class="cas-sync-btn" onclick="openManualAyahSync()">
-                🖐 مزامنة الآيات يدوياً
-              </button>
               <button class="cas-edit-btn" onclick="openAudioEditor()">
                 ✂️ تحرير الصوت
               </button>
@@ -3872,7 +3903,13 @@
           </div>
 
           <div class="sec">
-            <span class="lbl">صيغة التصدير</span>
+            <span class="lbl">إعدادات وتصدير الفيديو</span>
+            <button
+              onclick="openManualAyahSync()"
+              style="width:100%;padding:10px;background:rgba(201,151,58,0.12);border:1.5px solid rgba(201,151,58,0.5);border-radius:8px;color:#e4b55a;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;font-size:13px;margin-bottom:12px;transition:0.2s;"
+              onmouseover="this.style.background='rgba(201,151,58,0.22)'"
+              onmouseout="this.style.background='rgba(201,151,58,0.12)'"
+            >🖐 مزامنة الآيات يدوياً</button>
             <!-- خيارات الصيغة -->
             <div style="display: flex; gap: 7px; margin-bottom: 9px">
               <!-- MP4 -->
@@ -4178,12 +4215,18 @@
           استمع للقارئ واضغط على الزر (أو المسافة) عند الانتقال للنص التالي.
         </div>
 
+        <!-- Chunk mode toggle -->
+        <div class="mas-chunk-toggle">
+          <span>🔀 الآيات الطويلة تُقسَّم إلى مقاطع تلقائياً <span class="mas-chunk-badge">تلقائي</span></span>
+        </div>
+
         <!-- Body: ayah display + list -->
         <div class="mas-body">
           <!-- Center: current ayah -->
           <div class="mas-center">
             <div class="mas-counter" id="mas-counter">١ / ١</div>
             <div class="mas-ayah-display" id="mas-ayah-text">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</div>
+            <div class="mas-chunk-dots" id="mas-chunk-dots"></div>
             <div class="mas-divider"></div>
           </div>
 
@@ -5595,10 +5638,21 @@
         renderVList();
         $("vRef").textContent = vd.ref;
         updateScreen();
-        verseChunks = splitIntoChunks(
-          vd.wordList ? vd.wordList.join(" ") : vd.arText || "",
-          vd.wordList || null,
-        );
+
+        // لو في توقيتات MAS لهذه الآية — استخدم chunks المزامنة مباشرة
+        const ft = window._masFullTimings;
+        const tm = ft && ft[vd.ayahN];
+        if (tm && tm.chunks && tm.chunks.length > 1) {
+          verseChunks = tm.chunks.map((ch, i) => ({
+            words: ch.words,
+            startIdx: ch.words.length * i
+          }));
+        } else {
+          verseChunks = splitIntoChunks(
+            vd.wordList ? vd.wordList.join(" ") : vd.arText || "",
+            vd.wordList || null,
+          );
+        }
         currentChunkIdx = 0;
         showChunk(0, true);
         markCstateDirty();
@@ -6074,14 +6128,33 @@
           _prepVerse(vd, exportAyahs);
           window._expChunkAt = [];
           if (verseChunks.length > 1) {
-            const tw = verseChunks.reduce((s, c) => s + c.words.length, 0);
-            for (let ci = 1; ci < verseChunks.length; ci++)
-              window._expChunkAt.push({
-                f: Math.round(
-                  (verseChunks[ci].startIdx * buf.duration * FPS) / tw,
-                ),
-                ci,
-              });
+            const ft  = window._masFullTimings;
+            const tm  = ft && ft[vd.ayahN];
+            if (tm && tm.chunks && tm.chunks.length > 1) {
+              // ── استخدم توقيتات MAS الفعلية ──
+              const ayahStart = tm.start;
+              const ayahEnd   = (tm.end !== null && tm.end > ayahStart)
+                                ? tm.end : ayahStart + buf.duration;
+              const ayahDur   = Math.max(0.001, ayahEnd - ayahStart);
+              const totalFrames = Math.ceil(buf.duration * FPS);
+              for (let ci = 1; ci < tm.chunks.length; ci++) {
+                const ch = tm.chunks[ci];
+                if (!ch || ch.start === null) continue;
+                const chRelTime = Math.max(0, ch.start - ayahStart);
+                const chRelPct  = Math.min(chRelTime / ayahDur, 0.99);
+                const frame     = Math.max(1, Math.min(
+                  Math.round(chRelPct * totalFrames),
+                  totalFrames - 1
+                ));
+                window._expChunkAt.push({ f: frame, ci });
+              }
+            } else {
+              // ── مفيش توقيتات MAS — وزّع بالتساوي ──
+              const numChunks = verseChunks.length;
+              const framesPerChunk = Math.floor(Math.ceil(buf.duration * FPS) / numChunks);
+              for (let ci = 1; ci < numChunks; ci++)
+                window._expChunkAt.push({ f: ci * framesPerChunk, ci });
+            }
           }
           xShow(idx + 1, total, S.surah.ar + " — آية " + arN(vd.ayahN));
           setSbar(
@@ -6271,14 +6344,33 @@
           _prepVerse(vd, exportAyahs);
           window._expChunkAt = [];
           if (verseChunks.length > 1) {
-            const tw = verseChunks.reduce((s, c) => s + c.words.length, 0);
-            for (let ci = 1; ci < verseChunks.length; ci++)
-              window._expChunkAt.push({
-                f: Math.round(
-                  (verseChunks[ci].startIdx * buf.duration * FPS) / tw,
-                ),
-                ci,
-              });
+            const ft  = window._masFullTimings;
+            const tm  = ft && ft[vd.ayahN];
+            if (tm && tm.chunks && tm.chunks.length > 1) {
+              // ── استخدم توقيتات MAS الفعلية ──
+              const ayahStart = tm.start;
+              const ayahEnd   = (tm.end !== null && tm.end > ayahStart)
+                                ? tm.end : ayahStart + buf.duration;
+              const ayahDur   = Math.max(0.001, ayahEnd - ayahStart);
+              const totalFrames = Math.ceil(buf.duration * FPS);
+              for (let ci = 1; ci < tm.chunks.length; ci++) {
+                const ch = tm.chunks[ci];
+                if (!ch || ch.start === null) continue;
+                const chRelTime = Math.max(0, ch.start - ayahStart);
+                const chRelPct  = Math.min(chRelTime / ayahDur, 0.99);
+                const frame     = Math.max(1, Math.min(
+                  Math.round(chRelPct * totalFrames),
+                  totalFrames - 1
+                ));
+                window._expChunkAt.push({ f: frame, ci });
+              }
+            } else {
+              // ── مفيش توقيتات MAS — وزّع بالتساوي ──
+              const numChunks = verseChunks.length;
+              const framesPerChunk = Math.floor(Math.ceil(buf.duration * FPS) / numChunks);
+              for (let ci = 1; ci < numChunks; ci++)
+                window._expChunkAt.push({ f: ci * framesPerChunk, ci });
+            }
           }
           xShow(idx + 1, total, S.surah.ar + " — آية " + arN(vd.ayahN));
           setSbar(
@@ -6967,34 +7059,25 @@
       });
       audio.addEventListener("playing", () => {
         S.playing = true;
-        S._playingAt = performance.now(); // لحظة بداية التشغيل الفعلية
-        S._playingAtAudio = audio.currentTime;
         $("mBtn").innerHTML = "⏸";
         $("mBtn").style.background = "linear-gradient(135deg,#5c2424,#a03030)";
         $("pdot").style.display = "block";
         setSbar("▶ " + S.surah?.ar + " — آية " + arN(curAN()), "#5ec285");
-        S._chunkCycleStarted = false;
-      });
-      audio.addEventListener("durationchange", () => {});
-      audio.addEventListener("timeupdate", () => {
-        if (!S.playing || verseChunks.length <= 1) return;
-        if (S._chunkCycleStarted) return;
-        if (!audio.duration || !isFinite(audio.duration)) return;
-        S._chunkCycleStarted = true;
-        // احسب الوقت الفعلي من لحظة playing مش من timeupdate
-        const realElapsedMs = S._playingAt
-          ? (S._playingAtAudio * 1000) + (performance.now() - S._playingAt)
-          : audio.currentTime * 1000;
-        startChunkCycle(audio.duration, realElapsedMs);
+        if (verseChunks.length > 1 && audio.duration)
+          startChunkCycle(audio.duration);
+        if (S.surah && S.active >= 0)
+          fetchWordTiming(S.surah.n, curAN()).then((segs) => {
+            if (segs) startWordHighlight(segs, S.color);
+          });
       });
       audio.addEventListener("seeked", () => {
-        if (S.playing && S.surah && S.active >= 0) {
-          // seeked — no word highlight
-        }
+        if (S.playing && S.surah && S.active >= 0)
+          fetchWordTiming(S.surah.n, curAN()).then((s) => {
+            if (s) startWordHighlight(s, S.color);
+          });
       });
       audio.addEventListener("pause", () => {
         S.playing = false;
-        S._chunkCycleStarted = false;
         $("mBtn").innerHTML = "▶";
         $("mBtn").style.background = "linear-gradient(135deg,#245c38,#3ea066)";
         $("pdot").style.display = "none";
@@ -7030,6 +7113,47 @@
         $("pD").style.left = p + "%";
         $("tC").textContent = fmt(c);
         $("tD").textContent = fmt(d);
+
+        // ── تطبيق مقاطع MAS على المعاينة (صوت الشيخ) ──
+        var ft = window._masFullTimings;
+        if (!ft || !Object.keys(ft).length) return;
+        var globalT = MAS && MAS.started ? MAS.ayahStartGlobal + c : c;
+        // ابحث عن الآية والمقطع المناسبين
+        var keys = Object.keys(ft);
+        var sorted = keys.map(function(k){ return { n: parseInt(k), tm: ft[k] }; })
+                         .sort(function(a,b){ return a.tm.start - b.tm.start; });
+        var dur = audio.duration || 9999;
+        var vEl = $('vAr');
+        if (!vEl) return;
+        for (var i = 0; i < sorted.length; i++) {
+          var tm = sorted[i].tm;
+          var ayahEnd = tm.end !== null ? tm.end : (sorted[i+1] ? sorted[i+1].tm.start : dur);
+          if (globalT >= tm.start && globalT < ayahEnd) {
+            if (tm.chunks && tm.chunks.length > 1) {
+              for (var ch = 0; ch < tm.chunks.length; ch++) {
+                var chunk  = tm.chunks[ch];
+                var chEnd  = chunk.end !== null ? chunk.end
+                           : (tm.chunks[ch+1] ? tm.chunks[ch+1].start : ayahEnd);
+                if (globalT >= chunk.start && globalT < chEnd) {
+                  var key = sorted[i].n + '_' + ch;
+                  if (vEl.dataset.masChunk !== key) {
+                    vEl.dataset.masChunk = key;
+                    vEl.textContent = chunk.words.join(' ');
+                  }
+                  return;
+                }
+              }
+            } else {
+              var key2 = String(sorted[i].n);
+              if (vEl.dataset.masChunk !== key2) {
+                vEl.dataset.masChunk = key2;
+                var cached = (window.verseCache || {})[(S.surah ? S.surah.n : '') + ':' + sorted[i].n];
+                if (cached && cached.ar) vEl.textContent = cached.ar;
+              }
+            }
+            return;
+          }
+        }
       });
       audio.addEventListener("error", () => {
         const urls = audio._fallbackUrls || [],
@@ -7197,7 +7321,7 @@
         renderVList();
         renderAyahPicker();
         prefetchSurahTexts(sr.n, sr.v).then(() => renderAyahPicker());
-        // word timing prefetch disabled
+        if (S.sh?.qdcId) fetchWordTiming(sr.n, 1).catch(() => {});
         S.active = surahHasLeadingBasmala(sr.n) ? -1 : 0;
         loadAudio(true);
       }
@@ -7476,15 +7600,14 @@
         chunkTimer = null;
 
       function splitIntoChunks(text, wordList) {
-        const words =
-          wordList || (text || "").trim().split(/\s+/).filter(Boolean);
-        if (!words.length) return [];
-        const n = words.length;
-        // حد أقصى 15 كلمة لكل مقطع
-        const sz = Math.min(15, n <= 30 ? n : n <= 45 ? Math.ceil(n / 2) : Math.ceil(n / 3));
+        // استخدم النص العربي للتقسيم — wordList للعرض فقط
+        const srcWords = (text || "").trim().split(/\s+/).filter(Boolean);
+        const displayWords = wordList && wordList.length ? wordList : srcWords;
+        if (!displayWords.length) return [];
+        const SZ = 15; // 15 كلمة في كل مقطع
         const chunks = [];
-        for (let i = 0; i < words.length; i += sz)
-          chunks.push({ words: words.slice(i, i + sz), startIdx: i });
+        for (let i = 0; i < displayWords.length; i += SZ)
+          chunks.push({ words: displayWords.slice(i, i + SZ), startIdx: i });
         return chunks;
       }
 
@@ -7528,46 +7651,44 @@
           applyAndShow();
           markCstateDirty();
         } else {
-          vAr.style.transition = "none";
-          vAr.style.opacity = "1";
-          applyAndShow();
-          markCstateDirty();
+          vAr.style.opacity = "0";
+          vAr.style.transition = "opacity .2s ease";
+          setTimeout(() => {
+            applyAndShow();
+            markCstateDirty();
+          }, 220);
         }
       }
 
-      function startChunkCycle(totalDuration, audioNowMs, instant = false) {
+      function startChunkCycle(totalDuration, instant = false) {
         clearChunkCycle();
         if (verseChunks.length <= 1) return;
 
-        if (audioNowMs === undefined) audioNowMs = (audio.currentTime || 0) * 1000;
-        const segs = window._curSegments;
+        // وزّع الوقت بالنسبة لعدد الكلمات في كل جزء
+        const totalWords = verseChunks.reduce((s, c) => s + c.words.length, 0);
+        const msPerWord = (totalDuration * 1000) / totalWords;
+        const FADE_OFFSET = instant ? 0 : 220;
 
-        for (let ci = 1; ci < verseChunks.length; ci++) {
-          const firstWordIdx = verseChunks[ci].startIdx;
-          let chunkStartMs;
-
-          if (segs && segs[firstWordIdx]) {
-            // استخدم التوقيت الحقيقي للكلمة الأولى في المقطع
-            chunkStartMs = segs[firstWordIdx][1]; // wStart بالـ ms
-          } else {
-            // fallback: توزيع بالنسبة للكلمات
-            const totalWords = verseChunks.reduce((s, c) => s + c.words.length, 0);
-            const msPerWord = (totalDuration * 1000) / totalWords;
-            chunkStartMs = firstWordIdx * msPerWord;
-          }
-
-          const delay = Math.max(50, chunkStartMs - audioNowMs);
-          const idx = ci;
-          chunkTimers.push(setTimeout(() => {
-            showChunk(idx, instant);
-          }, delay));
+        let ci = 1;
+        function scheduleNext() {
+          if (ci >= verseChunks.length) return;
+          const wordsBeforeChunk = verseChunks[ci].startIdx;
+          const chunkStartMs = wordsBeforeChunk * msPerWord;
+          const elapsed = (audio.currentTime || 0) * 1000;
+          const delay = Math.max(50, chunkStartMs - elapsed - FADE_OFFSET);
+          chunkTimer = setTimeout(() => {
+            showChunk(ci, instant);
+            ci++;
+            scheduleNext();
+          }, delay);
         }
+        scheduleNext();
       }
-      let chunkTimers = [];
       function clearChunkCycle() {
-        chunkTimers.forEach(clearTimeout);
-        chunkTimers = [];
-        chunkTimer = null;
+        if (chunkTimer) {
+          clearTimeout(chunkTimer);
+          chunkTimer = null;
+        }
       }
       let _hlRAF = null,
         _hlLast = -1;
@@ -7577,10 +7698,9 @@
         const segs = segments,
           clr = color || S.color || "#fff";
         _hlLast = -1;
-        const origin = S.ayahStartTime || 0;
         function tick() {
           if (!S.playing) return;
-          const now = (audio.currentTime - origin) * 1000;
+          const now = audio.currentTime * 1000;
           let a = -1;
           for (const [wi, ws, we] of segs)
             if (now >= ws && now < we) {
@@ -7675,13 +7795,11 @@
           wordList ? wordList.join(" ") : ar,
           wordList,
         );
-        // احفظ الـ segments عشان نستخدمها في توقيت المقاطع
-        window._curSegments = segments || null;
         currentChunkIdx = 0;
         $("vRef").textContent = `﴿ ${S.surah.ar} : ${arN(ayahNum)} ﴾`;
         $("npT").textContent = S.surah.ar + " — آية " + arN(ayahNum);
         if (verseChunks.length > 0) showChunk(0, false);
-        if (segments && S.playing) { /* highlight disabled */ }
+        if (segments && S.playing) startWordHighlight(segments, S.color);
       }
 
       function updateScreen() {
@@ -8694,7 +8812,7 @@
         /* Service Worker */
         window.addEventListener("load", () => {
           if (!('serviceWorker' in navigator)) return;
-          navigator.serviceWorker.register('/sw.js', { scope: '/' })
+          navigator.serviceWorker.register('./sw.js').catch(()=>{})
             .then(reg => {
               console.log('[SW] registered, scope:', reg.scope);
               reg.addEventListener('updatefound', () => {
@@ -8704,7 +8822,6 @@
             .catch(err => console.warn('[SW] registration failed:', err.message));
         });
 
-      }
     </script>
     <script>
       /* ════════════════════════════════════════════════
@@ -8740,9 +8857,57 @@
         document.getElementById('cas-file-meta').textContent = (file.size / 1024 / 1024).toFixed(1) + ' MB';
 
         _casAudio.ontimeupdate = function() {
+          // progress bar
           var pct = _casAudio.duration ? (_casAudio.currentTime / _casAudio.duration * 100) : 0;
           document.getElementById('cas-prog-fill').style.width = pct + '%';
           document.getElementById('cas-time').textContent = casFormatTime(_casAudio.currentTime);
+
+          // ── تطبيق توقيتات MAS على المعاينة ──
+          var ft = window._masFullTimings;
+          if (!ft) return;
+          var keys = Object.keys(ft);
+          if (!keys.length) return;
+
+          var ct  = _casAudio.currentTime;
+          var dur = _casAudio.duration || 9999;
+          var vEl = document.getElementById('vAr');
+          if (!vEl) return;
+
+          // رتّب الآيات حسب start
+          var sorted = keys.map(function(k){ return { n: parseInt(k), tm: ft[k] }; })
+                           .sort(function(a,b){ return a.tm.start - b.tm.start; });
+
+          for (var i = 0; i < sorted.length; i++) {
+            var entry = sorted[i];
+            var tm    = entry.tm;
+            var ayahEnd = tm.end !== null ? tm.end : (sorted[i+1] ? sorted[i+1].tm.start : dur);
+
+            if (ct >= tm.start && ct < ayahEnd) {
+              // ── هل في مقاطع؟ ──
+              if (tm.chunks && tm.chunks.length > 1) {
+                for (var c = 0; c < tm.chunks.length; c++) {
+                  var ch    = tm.chunks[c];
+                  var chEnd = ch.end !== null ? ch.end
+                            : (tm.chunks[c+1] ? tm.chunks[c+1].start : ayahEnd);
+                  if (ct >= ch.start && ct < chEnd) {
+                    if (vEl.dataset.masChunk !== (entry.n + '_' + c)) {
+                      vEl.dataset.masChunk = entry.n + '_' + c;
+                      vEl.textContent = ch.words.join(' ');
+                    }
+                    return;
+                  }
+                }
+              } else {
+                // آية بدون مقاطع — اعرض النص كامل
+                if (vEl.dataset.masChunk !== String(entry.n)) {
+                  vEl.dataset.masChunk = String(entry.n);
+                  var cached = (window.verseCache || {})[(window.S&&window.S.surah?window.S.surah.n:'') + ':' + entry.n];
+                  if (cached && cached.ar) vEl.textContent = cached.ar;
+                }
+              }
+              return;
+            }
+          }
         };
         _casAudio.onplay  = function() { document.getElementById('cas-play-btn').textContent = '⏸'; };
         _casAudio.onpause = function() { document.getElementById('cas-play-btn').textContent = '▶'; };
@@ -8795,146 +8960,361 @@
          MANUAL AYAH SYNC MODAL (MAS) — Global Scope
       ════════════════════════════════════════════════ */
       var MAS = window.MAS = {
-        active: false,
-        started: false,
-        idx: 0,
-        queue: [],
-        timings: {},
+        active: false, started: false,
+        idx: 0, queue: [],
+        timings: {}, chunkTimings: {},
+        chunks: [], chunkIdx: 0,
         startTime: 0
       };
 
-      function openManualAyahSync() {
-        // اجمع الآيات المختارة مباشرة
-        var q = [];
-        if (window._apSelected && window._apSelected.size) {
-          q = [...window._apSelected].sort(function(a,b){return a-b;});
-        } else if (typeof syncGetQueue === 'function') {
-          q = syncGetQueue();
-        }
-        if (!q.length) { if (typeof toast$ === 'function') toast$('⚠ اختر سورة وآيات أولاً'); return; }
-        MAS.queue = q;
-        MAS.idx = 0;
-        MAS.timings = {};
-        MAS.started = false;
-        MAS.active = true;
-        // reset UI
-        document.getElementById('mas-start-btn').style.display = '';
-        document.getElementById('mas-next-btn').style.display = 'none';
-        document.getElementById('mas-save-btn').disabled = true;
-        document.getElementById('mas-instruction').textContent = 'استمع للقارئ واضغط على الزر (أو المسافة) عند الانتقال للنص التالي.';
-        masRenderList();
-        masRenderCurrent();
-        document.getElementById('masModal').classList.add('show');
-      }
-
-      function closeManualAyahSync() {
-        MAS.active = false;
-        MAS.started = false;
-        document.getElementById('masModal').classList.remove('show');
-      }
-
+      /* ── جيب نص الآية من أي مصدر متاح ── */
       function _masGetAyahText(n) {
         try {
           var s = window.S;
-          if (!s || !s.surah) return '';
-          var vc = window.verseCache || {};
-          var cached = vc[s.surah.n + ':' + n];
-          if (cached) return cached.ar || '';
-          // fallback: from S.data array
-          if (s.data && s.data[n-1]) return s.data[n-1].ar || '';
+          // 1. verseCache
+          if (s && s.surah) {
+            var cached = (window.verseCache || {})[s.surah.n + ':' + n];
+            if (cached && cached.ar) return cached.ar;
+          }
+          // 2. S.data array
+          if (s && s.data && s.data[n - 1] && s.data[n - 1].ar)
+            return s.data[n - 1].ar;
+          // 3. النص الظاهر على الشاشة (fallback)
+          var el = document.getElementById('vAr');
+          if (el && el.textContent.trim()) return el.textContent.trim();
         } catch(e) {}
         return '';
       }
 
-      function masRenderCurrent() {
-        var ayahNum = MAS.queue[MAS.idx];
-        var ar = ayahNum ? _masGetAyahText(ayahNum) : '';
-        document.getElementById('mas-ayah-text').textContent = ar || '—';
-        var cnt = (typeof arN === 'function') ? arN(MAS.idx + 1) + ' / ' + arN(MAS.queue.length) : (MAS.idx+1) + ' / ' + MAS.queue.length;
-        document.getElementById('mas-counter').textContent = cnt;
+      /* ── قسّم الآية لمقاطع — كل مقطع 15 كلمة بالظبط ── */
+      function _masGetChunks(ayahNum) {
+        var ar = _masGetAyahText(ayahNum);
+        if (!ar) return [{ words: [], text: '' }];
+        var words = ar.trim().split(/\s+/).filter(Boolean);
+        var SZ = 15; // حجم المقطع الثابت
+        var chunks = [];
+        for (var i = 0; i < words.length; i += SZ) {
+          var w = words.slice(i, i + SZ);
+          chunks.push({ words: w, text: w.join(' ') });
+        }
+        return chunks;
       }
 
+      /* ── ارسم الآية كاملة مع تحديد المقطع الحالي بالنقاط ── */
+      function masRenderCurrent() {
+        var ayahNum = MAS.queue[MAS.idx];
+        var ar      = ayahNum ? _masGetAyahText(ayahNum) : '';
+        var textEl  = document.getElementById('mas-ayah-text');
+        var dotsEl  = document.getElementById('mas-chunk-dots');
+        var cntEl   = document.getElementById('mas-counter');
+        var total   = MAS.queue.length;
+        var ayahLbl = (typeof arN==='function') ? arN(MAS.idx+1)+' / '+arN(total) : (MAS.idx+1)+' / '+total;
+
+        if (MAS.started && MAS.chunks.length > 0) {
+          // ── اعرض المقطع الحالي فقط ──
+          var ci = MAS.chunkIdx;
+          var curText = MAS.chunks[ci] ? MAS.chunks[ci].text : '';
+          if (textEl) textEl.textContent = curText || '—';
+
+          // نقاط (عدد المقاطع كلها، المكتملة خضر، الحالية ذهبي، الباقي رمادي)
+          if (dotsEl) dotsEl.innerHTML = MAS.chunks.map(function(_,i){
+            var cls = i < ci ? 'done' : i === ci ? 'current' : '';
+            return '<div class="mas-chunk-dot '+cls+'"></div>';
+          }).join('');
+
+          if (MAS.chunks.length > 1) {
+            var chLbl = (typeof arN==='function') ? arN(ci+1)+' / '+arN(MAS.chunks.length) : (ci+1)+' / '+MAS.chunks.length;
+            if (cntEl) cntEl.textContent = 'آية '+ayahLbl+' — مقطع '+chLbl;
+          } else {
+            if (cntEl) cntEl.textContent = 'آية '+ayahLbl;
+          }
+
+        } else {
+          // قبل البدء — اعرض الآية كاملة والنقاط فاضية
+          if (textEl) textEl.textContent = ar || '—';
+          if (dotsEl) dotsEl.innerHTML = MAS.chunks.length > 1
+            ? MAS.chunks.map(function(){ return '<div class="mas-chunk-dot"></div>'; }).join('')
+            : '';
+          if (cntEl) cntEl.textContent = ayahLbl;
+        }
+      }
+      async function openManualAyahSync() {
+        var q = [];
+        if (window._apSelected && window._apSelected.size)
+          q = [...window._apSelected].sort(function(a,b){return a-b;});
+        else if (typeof syncGetQueue === 'function')
+          q = syncGetQueue();
+        if (!q.length) { if (typeof toast$==='function') toast$('⚠ اختر آيات أولاً'); return; }
+
+        MAS.queue = q; MAS.idx = 0;
+        MAS.timings = {}; MAS.chunkTimings = {};
+        MAS.chunks = []; MAS.chunkIdx = 0;
+        MAS.started = false; MAS.active = true;
+
+        // اعرض المودال فوراً
+        document.getElementById('mas-start-btn').style.display = '';
+        document.getElementById('mas-next-btn').style.display = 'none';
+        document.getElementById('mas-save-btn').disabled = true;
+        document.getElementById('mas-instruction').textContent = 'جارٍ تحميل النصوص…';
+        document.getElementById('masModal').classList.add('show');
+
+        // جيب نصوص الآيات من API لو مش موجودة في الـ cache
+        var surahN = window.S && window.S.surah ? window.S.surah.n : null;
+        if (surahN) {
+          var vc = window.verseCache || {};
+          var needed = q.filter(function(n){ return !vc[surahN+':'+n]; });
+          if (needed.length) {
+            try {
+              var res = await fetch('https://api.alquran.cloud/v1/surah/'+surahN+'/ar');
+              var json = await res.json();
+              (json.data && json.data.ayahs || []).forEach(function(ayah){
+                if (!window.verseCache) window.verseCache = {};
+                window.verseCache[surahN+':'+ayah.numberInSurah] = { ar: ayah.text, en: '' };
+              });
+            } catch(e) { console.warn('MAS fetch:', e); }
+          }
+        }
+
+        // حمّل مقاطع أول آية عشان النقاط تظهر
+        MAS.chunks = _masGetChunks(q[0]);
+        document.getElementById('mas-instruction').textContent = 'استمع للقارئ واضغط على الزر (أو المسافة) عند الانتقال للنص التالي.';
+        masRenderList();
+        masRenderCurrent();
+      }
+
+      function closeManualAyahSync() {
+        MAS.active = false; MAS.started = false;
+        document.getElementById('masModal').classList.remove('show');
+      }
+
+      /* ── ارسم القائمة الجانبية مع توقيتات كل مقطع ── */
       function masRenderList() {
         var html = MAS.queue.map(function(n, i) {
-          var ar = _masGetAyahText(n);
-          var timing = MAS.timings[n];
-          var done = timing && timing.end !== null;
+          var ar      = _masGetAyahText(n);
+          var timing  = MAS.timings[n];
+          var done    = timing && timing.end !== null;
           var current = i === MAS.idx;
-          var nStr = (typeof arN === 'function') ? arN(n) : n;
-          var timeStr = done ? (timing.start.toFixed(2) + 's → ' + timing.end.toFixed(2) + 's') : '';
-          return '<div class="mas-ayah-item' + (current ? ' mas-current' : '') + (done ? ' mas-done' : '') + '" onclick="masJumpTo(' + i + ')">' +
-            '<div class="mas-ayah-meta">' +
-            '<span class="mas-ayah-num">آية ' + nStr + '</span>' +
-            '<span class="mas-ayah-status">' + (done ? '✓ مكتملة' : 'تلقائي') + '</span>' +
-            '</div>' +
-            '<div class="mas-ayah-ar">' + (ar ? ar.substring(0, 35) + '…' : '—') + '</div>' +
-            (timeStr ? '<div class="mas-ayah-time">' + timeStr + '</div>' : '') +
-            '</div>';
+          var nStr    = (typeof arN==='function') ? arN(n) : n;
+          var ct      = MAS.chunkTimings[n];
+
+          // ── توقيتات المقاطع ──
+          var chunksHtml = '';
+          if (ct && ct.length > 0) {
+            chunksHtml = '<div style="margin-top:5px;display:flex;flex-direction:column;gap:3px;">';
+            ct.forEach(function(ch, ci) {
+              var startStr = ch.start !== null ? ch.start.toFixed(2)+'s' : '…';
+              var endStr   = ch.end   !== null ? ch.end.toFixed(2)+'s'   : '…';
+              var isDone   = ch.end !== null;
+              var isActive = current && ci === MAS.chunkIdx;
+              var color    = isActive ? '#c9973a' : isDone ? '#3ea066' : 'rgba(255,255,255,0.3)';
+              var text     = ch.words ? ch.words.slice(0,4).join(' ')+'…' : 'مقطع '+(ci+1);
+              chunksHtml += '<div style="display:flex;justify-content:space-between;align-items:center;'
+                          + 'padding:2px 6px;border-radius:4px;'
+                          + 'background:rgba(255,255,255,0.04);font-size:10px;">'
+                          + '<span style="color:'+color+';flex:1;text-align:right;direction:rtl;overflow:hidden;white-space:nowrap;max-width:120px">'+text+'</span>'
+                          + '<span style="color:rgba(255,255,255,0.4);margin:0 6px;font-size:9px;">م'+(ci+1)+'</span>'
+                          + '<span style="color:'+color+';font-family:monospace;font-size:9px;white-space:nowrap">'+startStr+' → '+endStr+'</span>'
+                          + '</div>';
+            });
+            chunksHtml += '</div>';
+          } else if (done) {
+            chunksHtml = '<div class="mas-ayah-time">'+timing.start.toFixed(2)+'s → '+timing.end.toFixed(2)+'s</div>';
+          }
+
+          var badge = ct && ct.length > 1
+            ? ' <span style="color:#c9973a;font-size:9px">('+ct.length+' مقاطع)</span>' : '';
+
+          return '<div class="mas-ayah-item'+(current?' mas-current':'')+(done?' mas-done':'')+'" onclick="masJumpTo('+i+')">'
+            +'<div class="mas-ayah-meta">'
+            +'<span class="mas-ayah-num">آية '+nStr+badge+'</span>'
+            +'<span class="mas-ayah-status">'+(done?'✓ مكتملة':current&&MAS.started?'● جارٍ':'انتظار')+'</span>'
+            +'</div>'
+            +'<div class="mas-ayah-ar">'+(ar?ar.substring(0,35)+'…':'—')+'</div>'
+            +chunksHtml
+            +'</div>';
         }).join('');
         document.getElementById('mas-list').innerHTML = html;
         var cur = document.querySelector('.mas-ayah-item.mas-current');
-        if (cur) cur.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        if (cur) cur.scrollIntoView({block:'nearest', behavior:'smooth'});
       }
 
+      /* ── الوقت الحالي من أي مصدر صوت ── */
+      function _masNow() {
+        // صوت مرفوع (CAS)
+        if (window._casAudioUrl && window._casAudio && !window._casAudio.paused)
+          return { t: window._casAudio.currentTime, mode: 'cas' };
+        // صوت شيخ — نستخدم وقت بداية الآية + currentTime للملف الحالي
+        var shAu = document.getElementById('audio');
+        if (shAu) return { t: shAu.currentTime, mode: 'sheikh', globalT: (Date.now() - MAS.startTime) / 1000 };
+        return { t: (Date.now() - MAS.startTime) / 1000, mode: 'timer' };
+      }
+
+      /* ── ابدأ المزامنة ── */
       function masStart() {
         var q = MAS.queue;
         if (!q.length) return;
-        MAS.started = true;
-        MAS.idx = 0;
-        MAS.timings = {};
+
+        MAS.started  = true;
+        MAS.idx      = 0;
+        MAS.timings  = {};
+        MAS.chunkTimings = {};
+        MAS.chunkIdx = 0;
         MAS.startTime = Date.now();
-        // أول آية دايماً بتبدأ من الصفر
+        MAS.ayahStartGlobal = 0; // الوقت الكلي لبداية كل آية
+
+        // سجّل بداية أول آية
         MAS.timings[q[0]] = { start: 0, end: null };
+        MAS.chunks = _masGetChunks(q[0]);
+        MAS.chunkTimings[q[0]] = [{ start: 0, end: null, words: MAS.chunks[0] ? MAS.chunks[0].words : [] }];
+
         masRenderCurrent();
         masRenderList();
         document.getElementById('mas-start-btn').style.display = 'none';
         document.getElementById('mas-next-btn').style.display = '';
-        document.getElementById('mas-instruction').textContent = 'اضغط "التالي" أو المسافة عند انتهاء كل آية';
-        // play audio
-        var mainAudio = document.querySelector('audio') || document.getElementById('audioEl');
-        if (_casAudioUrl) {
-          if (_casAudio.paused) _casAudio.play().catch(function(){});
-        } else if (mainAudio && mainAudio.paused) {
-          if (typeof loadAudio === 'function') { if (typeof S !== 'undefined') { S.active = 0; } if (typeof curUrl !== 'undefined') curUrl = ''; loadAudio(true); }
+        document.getElementById('mas-save-btn').disabled = false;
+        document.getElementById('mas-instruction').textContent =
+          MAS.chunks.length > 1
+            ? 'اضغط "التالي" عند انتهاء كل مقطع — ' + MAS.chunks.length + ' مقاطع'
+            : 'اضغط "التالي" عند انتهاء كل آية';
+
+        // شغّل الصوت
+        if (window._casAudioUrl && window._casAudio) {
+          window._casAudio.pause();
+          window._casAudio.currentTime = 0;
+          window._casAudio.play().catch(function(){});
+        } else {
+          // صوت شيخ — شغّل أول آية
+          var shAu = document.getElementById('audio');
+          if (shAu) { shAu.pause(); shAu.currentTime = 0; }
+          if (typeof S !== 'undefined') S.active = 0;
+          if (typeof curUrl !== 'undefined') curUrl = '';
+          if (typeof loadAudio === 'function') loadAudio(true);
+
+          // لما الآية تخلص — انتقل تلقائياً للآية التالية
+          if (!MAS._sheikhEndHook) {
+            MAS._sheikhEndHook = true;
+            document.getElementById('audio').addEventListener('ended', function() {
+              if (!MAS.started) return;
+              // أغلق باقي المقاطع اللي لسه ما اتضغطتش
+              _masAutoFinishChunks();
+            });
+          }
         }
         masFlash();
       }
 
-      function masNext() {
+      /* ── أغلق المقاطع المتبقية تلقائياً لما الآية تخلص ── */
+      function _masAutoFinishChunks() {
         if (!MAS.started) return;
-        var mainAudio = _casAudioUrl ? _casAudio : (document.querySelector('audio') || {currentTime:0});
-        var q = MAS.queue;
-        var t = mainAudio.currentTime || ((Date.now() - MAS.startTime) / 1000);
+        var q   = MAS.queue;
+        var cur = q[MAS.idx];
+        var shAu = document.getElementById('audio');
+        var dur  = shAu ? shAu.duration : 0;
+        var base = MAS.ayahStartGlobal;
 
-        // سجّل نهاية الآية الحالية
-        var curAyah = q[MAS.idx];
-        if (MAS.timings[curAyah]) {
-          MAS.timings[curAyah].end = t;
+        // أغلق كل المقاطع المتبقية بتقسيم متساوي
+        var ct = MAS.chunkTimings[cur];
+        if (ct) {
+          var remaining = MAS.chunks.length - MAS.chunkIdx;
+          var step = remaining > 0 ? dur / MAS.chunks.length : 0;
+          for (var c = MAS.chunkIdx; c < MAS.chunks.length; c++) {
+            var chStart = base + c * step;
+            var chEnd   = base + (c + 1) * step;
+            if (ct[c]) { ct[c].start = chStart; ct[c].end = chEnd; }
+            else ct.push({ start: chStart, end: chEnd, words: MAS.chunks[c].words });
+          }
         }
-
+        if (MAS.timings[cur]) MAS.timings[cur].end = base + dur;
         MAS.idx++;
+        MAS.ayahStartGlobal = base + dur;
 
         if (MAS.idx >= q.length) {
-          // انتهينا
           MAS.started = false;
           document.getElementById('mas-next-btn').style.display = 'none';
           document.getElementById('mas-save-btn').disabled = false;
-          document.getElementById('mas-instruction').textContent = '✅ تم تسجيل جميع الآيات — يمكنك الحفظ الآن';
-          masRenderCurrent();
+          document.getElementById('mas-instruction').textContent = '✅ تم تسجيل جميع الآيات — اضغط حفظ';
+          masRenderCurrent(); masRenderList();
           return;
         }
 
-        // سجّل بداية الآية الجديدة
-        var nextAyah = q[MAS.idx];
-        MAS.timings[nextAyah] = { start: t, end: null };
+        // ابدأ الآية التالية
+        var next = q[MAS.idx];
+        MAS.chunkIdx = 0;
+        MAS.chunks = _masGetChunks(next);
+        MAS.timings[next] = { start: MAS.ayahStartGlobal, end: null };
+        MAS.chunkTimings[next] = [{ start: MAS.ayahStartGlobal, end: null, words: MAS.chunks[0] ? MAS.chunks[0].words : [] }];
 
-        masRenderList();
-        masRenderCurrent();
+        // شغّل الآية التالية
+        if (typeof S !== 'undefined') S.active = MAS.idx;
+        if (typeof curUrl !== 'undefined') curUrl = '';
+        if (typeof loadAudio === 'function') loadAudio(true);
+
+        masRenderList(); masRenderCurrent();
+        document.getElementById('mas-instruction').textContent =
+          MAS.chunks.length > 1
+            ? 'اضغط "التالي" عند انتهاء كل مقطع — ' + MAS.chunks.length + ' مقاطع'
+            : 'اضغط "التالي" عند انتهاء كل آية';
+      }
+
+      /* ── التالي: انتقل لمقطع ── */
+      function masNext() {
+        if (!MAS.started) return;
+        var q   = MAS.queue;
+        var cur = q[MAS.idx];
+        var now = _masNow();
+
+        // الوقت الحالي = globalT (من بداية كل الجلسة)
+        var globalT = MAS.ayahStartGlobal + now.t;
+
+        // أغلق المقطع الحالي
+        var ct = MAS.chunkTimings[cur];
+        if (ct && ct[MAS.chunkIdx]) ct[MAS.chunkIdx].end = globalT;
+        MAS.chunkIdx++;
+
+        // هل في مقاطع تانية في نفس الآية؟
+        if (MAS.chunkIdx < MAS.chunks.length) {
+          ct.push({ start: globalT, end: null, words: MAS.chunks[MAS.chunkIdx].words });
+          masRenderCurrent();
+          masFlash();
+          return;
+        }
+
+        // خلصت المقاطع — انتظر الصوت يخلص (sheikh mode) أو انتقل (cas mode)
+        if (now.mode === 'cas') {
+          // CAS: انتقل فوراً للآية التالية
+          if (MAS.timings[cur]) MAS.timings[cur].end = globalT;
+          MAS.idx++;
+          MAS.ayahStartGlobal = globalT;
+
+          if (MAS.idx >= q.length) {
+            MAS.started = false;
+            document.getElementById('mas-next-btn').style.display = 'none';
+            document.getElementById('mas-save-btn').disabled = false;
+            document.getElementById('mas-instruction').textContent = '✅ تم تسجيل جميع الآيات — اضغط حفظ';
+            masRenderCurrent(); masRenderList();
+            return;
+          }
+          var next = q[MAS.idx];
+          MAS.timings[next] = { start: globalT, end: null };
+          MAS.chunks = _masGetChunks(next);
+          MAS.chunkIdx = 0;
+          MAS.chunkTimings[next] = [{ start: globalT, end: null, words: MAS.chunks[0].words }];
+          masRenderList(); masRenderCurrent();
+          document.getElementById('mas-instruction').textContent =
+            MAS.chunks.length > 1
+              ? 'اضغط "التالي" عند انتهاء كل مقطع — ' + MAS.chunks.length + ' مقاطع'
+              : 'اضغط "التالي" عند انتهاء كل آية';
+        } else {
+          // Sheikh: خلصت المقاطع — الآية التالية هتيجي لما الصوت يخلص تلقائياً
+          document.getElementById('mas-instruction').textContent = '⏳ في انتظار انتهاء الآية…';
+        }
         masFlash();
       }
 
       function masJumpTo(i) {
         MAS.idx = i;
+        MAS.chunkIdx = 0;
+        if (MAS.started) MAS.chunks = _masGetChunks(MAS.queue[i]);
         masRenderCurrent();
         masRenderList();
       }
@@ -8943,30 +9323,82 @@
         var btn = document.getElementById('mas-next-btn');
         if (!btn) return;
         btn.classList.add('mas-flash');
-        setTimeout(function() { btn.classList.remove('mas-flash'); }, 300);
+        setTimeout(function(){ btn.classList.remove('mas-flash'); }, 300);
       }
 
       function masReset() {
-        MAS.started = false;
-        MAS.idx = 0;
-        MAS.timings = {};
+        MAS.started = false; MAS.idx = 0;
+        MAS.timings = {}; MAS.chunkTimings = {};
+        MAS.chunks = []; MAS.chunkIdx = 0;
         document.getElementById('mas-start-btn').style.display = '';
         document.getElementById('mas-next-btn').style.display = 'none';
         document.getElementById('mas-save-btn').disabled = true;
         document.getElementById('mas-instruction').textContent = 'استمع للقارئ واضغط على الزر (أو المسافة) عند الانتقال للنص التالي.';
+        var dotsEl = document.getElementById('mas-chunk-dots');
+        if (dotsEl) dotsEl.innerHTML = '';
         masRenderCurrent();
         masRenderList();
       }
 
       function masSave() {
-        if (!Object.keys(MAS.timings).length) return;
-        if (window.SYNC && window.SYNC.offsets) Object.assign(window.SYNC.offsets, MAS.timings);
-        if (typeof renderOffsetTable === 'function') renderOffsetTable();
-        if (typeof toast$ === 'function') toast$('✅ تم حفظ ' + Object.keys(MAS.timings).length + ' توقيت');
+        // أغلق الآية/المقطع الحالي لو لسه شغال
+        if (MAS.started) {
+          var au = window._casAudioUrl ? window._casAudio : (document.querySelector('audio') || {currentTime:0});
+          var t  = au.currentTime || ((Date.now() - MAS.startTime) / 1000);
+          var cur = MAS.queue[MAS.idx];
+          if (cur) {
+            var ct = MAS.chunkTimings[cur];
+            if (ct && ct[MAS.chunkIdx]) ct[MAS.chunkIdx].end = t;
+            if (MAS.timings[cur]) MAS.timings[cur].end = t;
+          }
+        }
+        if (!Object.keys(MAS.timings).length) {
+          if (typeof toast$==='function') toast$('⚠ لا توجد توقيتات للحفظ');
+          return;
+        }
+
+        // بنى التوقيتات الكاملة للتصدير
+        var merged = {};
+        Object.keys(MAS.timings).forEach(function(n) {
+          var t  = MAS.timings[n];
+          if (!t) return;
+          var ct = MAS.chunkTimings[n];
+          merged[n] = (ct && ct.length > 1)
+            ? { start: t.start, end: t.end !== null ? t.end : t.start + 5, chunks: ct }
+            : { start: t.start, end: t.end !== null ? t.end : t.start + 5 };
+        });
+
+        if (!Object.keys(merged).length) {
+          if (typeof toast$==='function') toast$('⚠ أكمل مزامنة آية واحدة على الأقل');
+          return;
+        }
+
+        // احفظ الـ timings الكاملة
+        window.MAS.timings = merged;
+
+        // احفظ start كـ offset في SYNC عشان المعاينة تشتغل
+        if (window.SYNC) {
+          Object.keys(merged).forEach(function(n) {
+            window.SYNC.offsets[n] = merged[n].start;
+          });
+        }
+
+        // احفظ الـ timings الكاملة للمعاينة والتصدير
+        window._masFullTimings = merged;
+
+        // reset dataset عشان المعاينة تبدأ من أول
+        var vEl = document.getElementById('vAr');
+        if (vEl) delete vEl.dataset.masChunk;
+
+        if (typeof renderOffsetTable==='function') renderOffsetTable();
+        var count = Object.keys(merged).length;
+        var hasChunks = Object.values(merged).some(function(t){ return t.chunks; });
+        if (typeof toast$==='function')
+          toast$('✅ تم حفظ ' + count + ' آية' + (hasChunks ? ' مع المقاطع' : ''));
         closeManualAyahSync();
       }
 
-      // Space key for MAS modal
+      // مفتاح المسافة
       document.addEventListener('keydown', function(e) {
         if (e.code !== 'Space') return;
         var modal = document.getElementById('masModal');
