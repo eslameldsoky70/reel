@@ -4335,14 +4335,16 @@
                   <option value="rotate">دوران</option>
                 </select>
               </div>
-              <!-- سرعة الحركة -->
+              <!-- مدة عرض كل صورة + سرعة الحركة (نفس القيمة) -->
               <div style="margin-top:8px;" id="bgMotionSpeedRow">
-                <span style="font-size:10px;color:rgba(255,255,255,0.4);display:block;margin-bottom:4px;">سرعة الحركة</span>
-                <select id="bgMotionSpeed" onchange="setBgMotionSpeed(this.value)"
+                <span style="font-size:10px;color:rgba(255,255,255,0.4);display:block;margin-bottom:4px;">مدة عرض كل صورة</span>
+                <select id="bgMotionSpeed" onchange="setBgDuration(this.value)"
                   style="width:100%;background:#112016;border:1px solid rgba(201,151,58,0.25);border-radius:6px;padding:8px 10px;color:#e4b55a;font-size:12px;font-family:'Cairo',sans-serif;">
-                  <option value="60">بطيء (60 ثانية)</option>
-                  <option value="20">متوسط (20 ثانية)</option>
-                  <option value="10" selected>سريع (10 ثواني)</option>
+                  <option value="5">سريع (5 ثواني)</option>
+                  <option value="10" selected>متوسط (10 ثواني)</option>
+                  <option value="20">20 ثانية</option>
+                  <option value="30">بطيء (30 ثانية)</option>
+                  <option value="60">بطيء جداً (60 ثانية)</option>
                 </select>
               </div>
               <!-- تعتيم -->
@@ -9647,6 +9649,8 @@
       var _bgCurIdx = 0; // الصورة الحالية
       var _bgMotion = "none"; // نوع الحركة
       var _bgMotionDuration = 10; // مدة الحركة بالثواني
+      var _bgSlideTimer = null;   // timer للانتقال بين الصور
+      var _bgSlideDuration = 10;  // مدة كل صورة بالثواني
       var _bgMotionRAF = null; // animation frame
       var _bgMotionStart = 0;
 
@@ -9745,11 +9749,59 @@
         _bgRenderList();
         _bgStartMotion(_bgMotion);
         markCstateDirty();
+        _bgStartSlideshow();
       }
 
+      function _bgStartSlideshow() {
+        // امسح أي timer قديم
+        if (_bgSlideTimer) { clearInterval(_bgSlideTimer); _bgSlideTimer = null; }
+        if (_bgImages.length <= 1) return;
+        console.log('[Slideshow] starting, images:', _bgImages.length, 'duration:', _bgSlideDuration);
+        _bgSlideTimer = setInterval(function() {
+          var next = (_bgCurIdx + 1) % _bgImages.length;
+          console.log('[Slideshow] switching to image', next);
+          // غيّر الصورة بدون ما نعيد startSlideshow (عشان مانقطعش الـ interval)
+          _bgCurIdx = next;
+          _bgStopMotion();
+          var old = document.getElementById('bgMedia');
+          if (old) old.remove();
+          var img = _bgImages[next];
+          var screen = document.getElementById('screen');
+          if (!screen || !img) return;
+          var el;
+          if (img.isVideo) {
+            el = document.createElement('video');
+            el.autoplay = true; el.loop = true; el.muted = true; el.playsInline = true;
+            el.src = img.url;
+            el.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;border-radius:inherit;transform-origin:center center;';
+            screen.insertBefore(el, screen.firstChild);
+            el.play().catch(function(){});
+          } else {
+            el = document.createElement('img');
+            el.src = img.url;
+            el.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;border-radius:inherit;transform-origin:center center;';
+            screen.insertBefore(el, screen.firstChild);
+          }
+          el.id = 'bgMedia';
+          _bgRenderList();
+          _bgStartMotion(_bgMotion);
+          markCstateDirty();
+        }, _bgSlideDuration * 1000);
+      }
+
+      function setBgSlideDur(val) {
+        setBgDuration(val);
+      }
       function setBgMotionSpeed(val) {
-        _bgMotionDuration = parseFloat(val) || 10;
+        setBgDuration(val);
+      }
+      function setBgDuration(val) {
+        var d = parseFloat(val) || 10;
+        _bgSlideDuration  = d;
+        _bgMotionDuration = d;
+        // أعد تشغيل الحركة والـ slideshow بالمدة الجديدة
         if (_bgMotion !== 'none') { _bgStopMotion(); _bgStartMotion(_bgMotion); }
+        _bgStartSlideshow();
       }
 
       function setBgMotion(val) {
@@ -9826,6 +9878,7 @@
         _bgShowCurrent(0);
       }
       function clearCustomBg(silent) {
+        if (_bgSlideTimer) { clearInterval(_bgSlideTimer); _bgSlideTimer = null; }
         if (customBgObjectUrl) {
           URL.revokeObjectURL(customBgObjectUrl);
           customBgObjectUrl = null;
