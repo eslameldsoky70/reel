@@ -5946,10 +5946,14 @@
           bgMedia &&
           (bgMedia.tagName === "VIDEO" || bgMedia.tagName === "IMG")
         ) {
-          CSTATE.bgImage = bgMedia;
-          CSTATE.bgGradient = null;
-          _gradCache = null; // invalidate gradient cache when switching to image
-        } else {
+          // أثناء التصدير مع صور متعددة: لا تكتب فوق الصورة المحمّلة من _prepVerse
+          if (!(isExporting && _bgImages && _bgImages.length > 1)) {
+            CSTATE.bgImage = bgMedia;
+            CSTATE.bgGradient = null;
+            _gradCache = null;
+          }
+        } else if (!isExporting) {
+          // لما بنصدر — خلي bgImage زي ما هو (snapshot من _prepVerse)
           CSTATE.bgImage = null;
           const newGrad =
             document.getElementById("screen")?.style.background ||
@@ -6255,14 +6259,106 @@
         ctx.restore();
       }
 
+      // رسم صورة خلفية على الـ canvas مع cover fit + motion (مثل الموقع الجديد)
+      function _drawBgImageToCanvas(ctx2, img, W, H) {
+        const mType = (typeof _bgMotion !== 'undefined') ? _bgMotion : 'none';
+        const mDur  = (typeof _bgMotionDuration !== 'undefined' && _bgMotionDuration > 0) ? _bgMotionDuration : 10;
+        const tSec  = (isExporting && typeof window._expFrameTimeSec === 'number')
+                      ? window._expFrameTimeSec
+                      : (performance.now() - (typeof _bgMotionStart !== 'undefined' ? _bgMotionStart : 0)) / 1000;
+        const t = (tSec % mDur) / mDur;
+
+        // cover fit (نفس الموقع الجديد)
+        const iw = img.naturalWidth || img.width || W;
+        const ih = img.naturalHeight || img.height || H;
+        const ir = iw / ih, cr = W / H;
+        let sw, sh, sx, sy;
+        if (ir > cr) { sh = H; sw = H * ir; sx = (W - sw) / 2; sy = 0; }
+        else          { sw = W; sh = W / ir; sx = 0; sy = (H - sh) / 2; }
+
+        const opacity = (typeof CSTATE !== 'undefined' && CSTATE.bgDimRaw != null)
+                        ? 1 : 1; // opacity يتحكم فيه bgDim layer
+
+        ctx2.save();
+        ctx2.globalAlpha = opacity;
+
+        if (mType !== 'none') {
+          // نفس معادلات الموقع الجديد بالضبط
+          let scale = 1, tx2 = 0, ty2 = 0, rot = 0;
+          const ease = (x) => x < .5 ? 4*x*x*x : 1 - Math.pow(-2*x+2,3)/2;
+          const half = mDur / 2, raw = tSec % mDur, phase = raw > half ? 1-(raw-half)/half : raw/half;
+          const eased = ease(phase);
+
+          if (mType === 'kenburns') {
+            scale = 1 + eased * 0.15;
+            tx2   = (eased - 0.5) * W * 0.04;
+            ty2   = (eased - 0.5) * H * 0.04;
+          } else if (mType === 'zoomin') {
+            scale = 1 + eased * 0.3;
+          } else if (mType === 'zoomout') {
+            scale = 1.3 - eased * 0.3;
+          } else if (mType === 'pan') {
+            tx2   = (eased - 0.5) * W * 0.15;
+            ty2   = (eased - 0.5) * H * 0.1;
+            scale = 1.1;
+          } else if (mType === 'rotate') {
+            rot   = tSec / mDur * Math.PI * 2;
+            scale = 1.4;
+          }
+
+          ctx2.translate(W/2 + tx2, H/2 + ty2);
+          if (rot !== 0) ctx2.rotate(rot);
+          ctx2.scale(scale, scale);
+          ctx2.drawImage(img, sx - W/2, sy - H/2, sw, sh);
+        } else {
+          ctx2.drawImage(img, sx, sy, sw, sh);
+        }
+        ctx2.restore();
+      }
+
       function drawFrameDirect() {
         const W = canvas.width,
           H = canvas.height;
         ctx.clearRect(0, 0, W, H);
-        if (CSTATE.bgImage) {
+
+        // ── اختيار الصورة حسب الوقت المنقضي (مثل الـ slideshow) ──
+        if (isExporting && _bgImages && _bgImages.length > 1 && window._bgPreloaded) {
+          const tSec = typeof window._expFrameTimeSec === 'number' ? window._expFrameTimeSec : 0;
+          const dur  = (typeof _bgSlideDuration !== 'undefined' && _bgSlideDuration > 0) ? _bgSlideDuration : 10;
+          const bgIdx = Math.floor(tSec / dur) % _bgImages.length;
+          const cachedImg = window._bgPreloaded[bgIdx];
+          if (typeof window._lastLoggedBgIdx === 'undefined' || window._lastLoggedBgIdx !== bgIdx) {
+            window._lastLoggedBgIdx = bgIdx;
+            console.log('[BG] drawing image', bgIdx, '/', _bgImages.length, '| preloaded:', !!cachedImg, '| complete:', cachedImg?.complete, '| w:', cachedImg?.naturalWidth);
+          }
+          if (cachedImg && cachedImg.complete && cachedImg.naturalWidth > 0) {
+            _drawBgImageToCanvas(ctx, cachedImg, W, H);
+          } else {
+            // fallback: gradient
+            const fill = CSTATE.bgGradient ? parseCSSGradient(CSTATE.bgGradient, W, H) : '#070e09';
+            ctx.fillStyle = fill; ctx.fillRect(0, 0, W, H);
+          }
+        } else if (CSTATE.bgImage) {
           try {
-            ctx.drawImage(CSTATE.bgImage, 0, 0, W, H);
-          } catch (e) {}
+            const bi = CSTATE.bgImage;
+            // تأكد إن الصورة/الفيديو محمل
+            const ready = bi.tagName === 'VIDEO'
+              ? bi.readyState >= 2
+              : (bi.complete && bi.naturalWidth > 0);
+            if (ready) {
+              _drawBgImageToCanvas(ctx, bi, W, H);
+            } else {
+              // fallback للـ gradient لو الصورة مش جاهزة
+              const fill = CSTATE.bgGradient
+                ? parseCSSGradient(CSTATE.bgGradient, W, H)
+                : "#070e09";
+              ctx.fillStyle = fill;
+              ctx.fillRect(0, 0, W, H);
+            }
+          } catch (e) {
+            ctx.fillStyle = "#070e09";
+            ctx.fillRect(0, 0, W, H);
+          }
         } else {
           const fill = CSTATE.bgGradient
             ? parseCSSGradient(CSTATE.bgGradient, W, H)
@@ -7069,14 +7165,27 @@
         stopWordHighlight();
         clearChunkCycle();
         canvasFadeWords = [];
-        S.active = exportAyahs.indexOf(vd.ayahN);
+        const _idx = exportAyahs.indexOf(vd.ayahN);
+        S.active = _idx >= 0 ? _idx : 0;
         renderVList();
         $("vRef").textContent = vd.ref;
         updateScreen();
 
+        // الصورة تتحدد في drawFrameDirect حسب الوقت
+
+        // ── snapshot الصورة للـ canvas (صورة واحدة أو معاينة) ──
+        if (!isExporting || !(_bgImages && _bgImages.length > 1)) {
+          const bgEl = document.getElementById("bgMedia");
+          if (bgEl && (bgEl.tagName === "IMG" || bgEl.tagName === "VIDEO")) {
+            CSTATE.bgImage = bgEl;
+            CSTATE.bgGradient = null;
+            _gradCache = null;
+          }
+        }
+
         // لو في توقيتات MAS لهذه الآية — استخدم chunks المزامنة مباشرة
         const ft = window._masFullTimings;
-        const tm = ft && ft[vd.ayahN];
+        const tm = _masGetTiming(vd.ayahN);
         if (tm && tm.chunks && tm.chunks.length > 1) {
           verseChunks = tm.chunks.map((ch, i) => ({
             words: ch.words,
@@ -7094,11 +7203,17 @@
       }
 
       function _drawVerseFrame(vd, f, msPerFrame, hlActive) {
-        // chunk transition
+        // chunk transition — كل chunk جديد يغيّر الصورة
         if (window._expChunkAt) {
-          for (const sc of window._expChunkAt)
-            if (f === sc.f) showChunk(sc.ci, true);
+          for (const sc of window._expChunkAt) {
+            if (f === sc.f) {
+              showChunk(sc.ci, true);
+
+            }
+          }
         }
+        // وقت الـ frame بالثواني للحركة على الـ canvas
+        window._expFrameTimeSec = _expElapsedBefore + (f * msPerFrame / 1000);
         _cstateDirty = true;
         syncCSTATE();
         drawFrameDirect();
@@ -7123,12 +7238,17 @@
 
         if (!exportAyahs.length) return toast$("⚠ اختر آيات أولاً");
 
-        // التحقق من وجود توقيتات المزامنة — من SYNC.offsets أو MAS.timings مباشرة
+        // التحقق من وجود توقيتات المزامنة
+        // ترتيب الأولوية: SYNC.offsets أولاً (fallback)، _masFullTimings يكتب فوقه (يحمل {start,end,chunks})
         const syncOffsets = {};
         if (window.SYNC && window.SYNC.offsets)
-          Object.assign(syncOffsets, window.SYNC.offsets);
-        if (window.MAS && window.MAS.timings)
-          Object.assign(syncOffsets, window.MAS.timings);
+          Object.keys(window.SYNC.offsets).forEach(k => {
+            syncOffsets[parseInt(k)] = window.SYNC.offsets[k];
+          });
+        if (window._masFullTimings)
+          Object.keys(window._masFullTimings).forEach(k => {
+            syncOffsets[parseInt(k)] = window._masFullTimings[k];
+          });
 
         // تحقق إن في توقيتات صالحة (format جديد {start,end} أو قديم رقم)
         const hasSyncData = exportAyahs.some((n) => {
@@ -7178,13 +7298,13 @@
           // بنا توقيتات لكل آية من الـ format الجديد {start, end}
           const timings = exportAyahs
             .map((n) => {
-              const t = syncOffsets[n];
-              if (t === undefined) return null;
+              const t = syncOffsets[n] || syncOffsets[String(n)];
+              if (t === undefined || t === null) return null;
               if (typeof t === "object" && t.start !== undefined) {
                 return { ayahN: n, start: t.start, end: t.end };
               }
               // format قديم (رقم بس) — نعامله كـ start
-              return { ayahN: n, start: t, end: null };
+              return { ayahN: n, start: Number(t), end: null };
             })
             .filter((t) => t !== null)
             .sort((a, b) => a.start - b.start);
@@ -7234,8 +7354,9 @@
                   );
                   const j = await r.json();
                   arText = j.data?.text || "";
-                  if (S.surah.n !== 1) arText = stripBasmala(arText);
                 }
+                // حذف البسملة دائماً — cache أو API — ما عدا الفاتحة
+                if (S.surah.n !== 1) arText = stripBasmala(arText);
               } catch (e) {}
 
               xShow(i + 1, timings.length, "آية " + arN(ayahN));
@@ -7290,12 +7411,16 @@
           _mtCache.clear();
           stopDrawLoop();
           isExporting = true;
+          window._dbgLogged = false;
           updateExportBtn(true);
+          // وقف الـ slideshow أثناء التصدير
+          if (_bgSlideTimer) { clearInterval(_bgSlideTimer); _bgSlideTimer = null; }
+          _bgStopMotion();
 
           const canMP4 =
             typeof VideoEncoder !== "undefined" &&
             typeof AudioEncoder !== "undefined" &&
-            typeof Mp4Muxer !== "undefined";
+            (typeof Mp4Muxer !== "undefined" || window._mp4MuxerLoaded);
 
           if (_exportFmt === "mp4" && _turboMode && canMP4) {
             toast$("⚡ تصدير MP4 بصوت مخصص...");
@@ -7491,14 +7616,32 @@
         _mtCache.clear();
         stopDrawLoop();
         isExporting = true;
+        window._dbgLogged = false;
         updateExportBtn(true);
+        // وقف الـ slideshow أثناء التصدير
+        if (window._bgSlideTimer) { clearInterval(window._bgSlideTimer); window._bgSlideTimer = null; }
+
+        // انتظر تحميل mp4-muxer لو لسه شغّال (max 5 ثواني)
+        if (!window._mp4MuxerLoaded && typeof Mp4Muxer === "undefined") {
+          toast$("⏳ جاري تحميل مكتبة MP4...");
+          await new Promise(resolve => {
+            let waited = 0;
+            const check = setInterval(() => {
+              waited += 200;
+              if (window._mp4MuxerLoaded || typeof Mp4Muxer !== "undefined" || waited >= 5000) {
+                clearInterval(check);
+                resolve();
+              }
+            }, 200);
+          });
+        }
 
         // اختيار المسار
         /* canMP4: نتحقق من Mp4Muxer (CDN) أو _mp4MuxerLoaded (loaded async) */
         const canMP4 =
           typeof VideoEncoder !== "undefined" &&
           typeof AudioEncoder !== "undefined" &&
-          typeof Mp4Muxer !== "undefined";
+          (typeof Mp4Muxer !== "undefined" || window._mp4MuxerLoaded);
 
         if (_exportFmt === "mp4" && _turboMode && canMP4) {
           toast$("⚡ تصدير MP4...");
@@ -7636,6 +7779,20 @@
           audioSent = 0;
         const sampPerFrame = Math.round(SR / FPS);
 
+        // preload كل صور الخلفية قبل لوب التصدير
+        if (_bgImages && _bgImages.length > 1) await _bgPreloadAll();
+
+        // snapshot الصورة الحالية قبل التصدير
+        const _exportBgEl = document.getElementById('bgMedia');
+        const _exportBgSnapshot = (_exportBgEl &&
+          (_exportBgEl.tagName === 'IMG' || _exportBgEl.tagName === 'VIDEO'))
+          ? _exportBgEl : null;
+        if (_exportBgSnapshot && !(_bgImages && _bgImages.length > 1)) {
+          CSTATE.bgImage = _exportBgSnapshot;
+          CSTATE.bgGradient = null;
+          _gradCache = null;
+        }
+
         for (let idx = 0; idx < verseData.length; idx++) {
           if (_expAbort || vEncErr) break;
           const vd = verseData[idx],
@@ -7645,7 +7802,7 @@
           window._expChunkAt = [];
           if (verseChunks.length > 1) {
             const ft = window._masFullTimings;
-            const tm = ft && ft[vd.ayahN];
+            const tm = _masGetTiming(vd.ayahN);
             if (tm && tm.chunks && tm.chunks.length > 1) {
               // ── استخدم توقيتات MAS الفعلية ──
               const ayahStart = tm.start;
@@ -7857,6 +8014,9 @@
           msPerFrame = 1000 / FPS;
         const frameBlobs = [];
 
+        // preload كل صور الخلفية قبل لوب التصدير
+        if (_bgImages && _bgImages.length > 1) await _bgPreloadAll();
+
         for (let idx = 0; idx < verseData.length; idx++) {
           if (_expAbort) break;
           const vd = verseData[idx],
@@ -7865,7 +8025,7 @@
           window._expChunkAt = [];
           if (verseChunks.length > 1) {
             const ft = window._masFullTimings;
-            const tm = ft && ft[vd.ayahN];
+            const tm = _masGetTiming(vd.ayahN);
             if (tm && tm.chunks && tm.chunks.length > 1) {
               // ── استخدم توقيتات MAS الفعلية ──
               const ayahStart = tm.start;
@@ -8441,6 +8601,13 @@
         { l: "زمردي", e: "💚", g: "linear-gradient(160deg,#001a0a,#003318)" },
         { l: "ورد", e: "🌸", g: "linear-gradient(160deg,#140010,#20001a)" },
       ];
+
+      /* ── helper: جيب توقيت MAS بغض النظر عن نوع الـ key ── */
+      function _masGetTiming(ayahN) {
+        var ft = window._masFullTimings;
+        if (!ft) return null;
+        return ft[ayahN] || ft[String(ayahN)] || ft[parseInt(ayahN)] || null;
+      }
 
       /* ══ STATE ══ */
       let S = {
@@ -9159,10 +9326,12 @@
       }
 
       function stripBasmala(ar) {
-        const d = (s) => s.replace(/[ً-ٰٟ]/g, "");
+        const d = (s) => s
+          .replace(/[\u064B-\u0670\u065F]/g, "")
+          .replace(/[\u0671\u0622\u0623\u0625]/g, "\u0627");
         const w = ar.split(" ");
-        if (w[0] && d(w[0]).includes("بسم")) {
-          const i = w.findIndex((x) => d(x).includes("الرحيم"));
+        if (w[0] && d(w[0]).includes("\u0628\u0633\u0645")) {
+          const i = w.findIndex((x) => d(x).includes("\u0627\u0644\u0631\u062D\u064A\u0645"));
           if (i !== -1)
             return w
               .slice(i + 1)
@@ -9193,9 +9362,19 @@
         const displayWords = wordList && wordList.length ? wordList : srcWords;
         if (!displayWords.length) return [];
         const SZ = 15; // 15 كلمة في كل مقطع
+        const MIN_LAST = 4; // أقل عدد كلمات يستحق مقطع مستقل
         const chunks = [];
         for (let i = 0; i < displayWords.length; i += SZ)
           chunks.push({ words: displayWords.slice(i, i + SZ), startIdx: i });
+        // لو المقطع الأخير فيه كلمات قليلة جداً — ضمّه للي قبله
+        if (chunks.length > 1) {
+          const last = chunks[chunks.length - 1];
+          if (last.words.length < MIN_LAST) {
+            const prev = chunks[chunks.length - 2];
+            prev.words = prev.words.concat(last.words);
+            chunks.pop();
+          }
+        }
         return chunks;
       }
 
@@ -9747,17 +9926,40 @@
             : 50,
         );
         _bgRenderList();
-        _bgStartMotion(_bgMotion);
+        if (!isExporting) _bgStartMotion(_bgMotion);
         markCstateDirty();
-        _bgStartSlideshow();
+        if (!isExporting) _bgStartSlideshow();
+      }
+
+      // تحميل كل صور الخلفية مسبقاً كـ HTMLImageElement جاهزة للـ canvas
+      async function _bgPreloadAll() {
+        window._bgPreloaded = await Promise.all(
+          _bgImages.map(function(img) {
+            if (img.isVideo) {
+              // للفيديو: استخدم العنصر الموجود في DOM أو أنشئ واحد
+              var v = document.getElementById('bgMedia');
+              return Promise.resolve(v && v.tagName === 'VIDEO' ? v : null);
+            }
+            return new Promise(function(resolve) {
+              var el = new Image();
+              el.onload = function() { resolve(el); };
+              el.onerror = function() { resolve(null); };
+              el.src = img.url;
+            });
+          })
+        );
       }
 
       function _bgStartSlideshow() {
         // امسح أي timer قديم
         if (_bgSlideTimer) { clearInterval(_bgSlideTimer); _bgSlideTimer = null; }
+        // لا تبدأ الـ slideshow أثناء التصدير — الصور بتتبدل عبر _prepVerse
+        if (isExporting) return;
         if (_bgImages.length <= 1) return;
         console.log('[Slideshow] starting, images:', _bgImages.length, 'duration:', _bgSlideDuration);
         _bgSlideTimer = setInterval(function() {
+          // وقف التنفيذ لو بدأ التصدير
+          if (isExporting) { clearInterval(_bgSlideTimer); _bgSlideTimer = null; return; }
           var next = (_bgCurIdx + 1) % _bgImages.length;
           console.log('[Slideshow] switching to image', next);
           // غيّر الصورة بدون ما نعيد startSlideshow (عشان مانقطعش الـ interval)
@@ -11065,21 +11267,23 @@
 
       /* ── جيب نص الآية من أي مصدر متاح ── */
       function _masGetAyahText(n) {
+        var result = "";
         try {
           var s = window.S;
-          // 1. verseCache
           if (s && s.surah) {
             var cached = (window.verseCache || {})[s.surah.n + ":" + n];
-            if (cached && cached.ar) return cached.ar;
+            if (cached && cached.ar) result = cached.ar;
           }
-          // 2. S.data array
-          if (s && s.data && s.data[n - 1] && s.data[n - 1].ar)
-            return s.data[n - 1].ar;
-          // 3. النص الظاهر على الشاشة (fallback)
-          var el = document.getElementById("vAr");
-          if (el && el.textContent.trim()) return el.textContent.trim();
+          if (!result && s && s.data && s.data[n - 1] && s.data[n - 1].ar)
+            result = s.data[n - 1].ar;
+          if (!result) {
+            var el = document.getElementById("vAr");
+            if (el && el.textContent.trim()) result = el.textContent.trim();
+          }
         } catch (e) {}
-        return "";
+        if (result && window.S && window.S.surah && window.S.surah.n !== 1)
+          if (typeof stripBasmala === "function") result = stripBasmala(result);
+        return result;
       }
 
       /* ── قسّم الآية لمقاطع — كل مقطع 15 كلمة بالظبط ── */
@@ -11088,10 +11292,18 @@
         if (!ar) return [{ words: [], text: "" }];
         var words = ar.trim().split(/\s+/).filter(Boolean);
         var SZ = 15; // حجم المقطع الثابت
+        var MIN_LAST = 4; // أقل عدد كلمات يستحق مقطع مستقل
         var chunks = [];
         for (var i = 0; i < words.length; i += SZ) {
           var w = words.slice(i, i + SZ);
           chunks.push({ words: w, text: w.join(" ") });
+        }
+        // لو المقطع الأخير فيه كلمات قليلة جداً — ضمّه للي قبله
+        if (chunks.length > 1 && chunks[chunks.length - 1].words.length < MIN_LAST) {
+          var last = chunks.pop();
+          var prev = chunks[chunks.length - 1];
+          prev.words = prev.words.concat(last.words);
+          prev.text = prev.words.join(" ");
         }
         return chunks;
       }
