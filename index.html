@@ -13068,9 +13068,7 @@
         window.addEventListener("beforeinstallprompt", function (e) {
           e.preventDefault();
           _deferredPrompt = e;
-          if (!_isInstalled() && !_wasDismissed()) {
-            setTimeout(_showBanner, 2500);
-          }
+          setTimeout(_showBanner, 1000); /* ← شيل الشرط هنا لو عايزها تظهر دايماً */
         });
 
         /* ── iOS Safari: لا يدعم beforeinstallprompt ── */
@@ -13081,9 +13079,13 @@
             /safari/i.test(navigator.userAgent) &&
             !/chrome|crios|fxios/i.test(navigator.userAgent);
 
-          if (isIOS && isSafari && !_isInstalled() && !_wasDismissed()) {
-            setTimeout(_showBanner, 2500);
+          /* ← شيل الشرط هنا لو عايزها تظهر دايماً على iOS */
+          if (isIOS && isSafari) {
+            setTimeout(_showBanner, 1000);
           }
+
+          /* ← السطر ده يخلّيها تظهر على كل الأجهزة للتجربة */
+          setTimeout(_showBanner, 1000);
         });
 
         /* ── ديسكتوب / تابلت: انتظر beforeinstallprompt ── */
