@@ -17,6 +17,7 @@
     "
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="/manifest.json" />
     <!-- PWA -->
     <meta name="theme-color" content="#c9973a" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -45,9 +46,9 @@
       window._mp4MuxerLoaded = false;
       (function () {
         const SOURCES = [
-          "/libs/mp4-muxer.js", // محلي
           "https://cdn.jsdelivr.net/npm/mp4-muxer@5/build/mp4-muxer.js", // CDN 1
-          "https://unpkg.com/mp4-muxer@5/build/mp4-muxer.js", // CDN 2
+          "https://unpkg.com/mp4-muxer@5/build/mp4-muxer.js",            // CDN 2
+          "/libs/mp4-muxer.js",                                           // محلي
         ];
         let idx = 0;
         function tryNext() {
@@ -4834,126 +4835,6 @@
               </div>
             </div>
           </div>
-          <div class="sec" style="padding: 0">
-            <div
-              onclick="toggleAcc(this)"
-              style="
-                display: flex;
-                align-items: center;
-                gap: 9px;
-                cursor: pointer;
-                padding: 13px 13px;
-                user-select: none;
-              "
-            >
-              <span style="font-size: 17px">✨</span>
-              <span
-                style="
-                  font-size: 13px;
-                  font-weight: 700;
-                  color: #b5c4bc;
-                  flex: 1;
-                  transition: color 0.2s;
-                "
-                >التأثيرات</span
-              >
-              <span
-                class="acc-arrow"
-                style="
-                  color: #6e8878;
-                  font-size: 11px;
-                  transition:
-                    transform 0.2s,
-                    color 0.2s;
-                "
-                >▶</span
-              >
-            </div>
-            <div style="display: none">
-              <div class="sw-row" onclick="toggleFx('stars')">
-                <span class="sw-l">✦ نجوم لامعة</span>
-                <div
-                  class="sw"
-                  id="sw-stars"
-                  style="
-                    background: linear-gradient(135deg, #245c38, #3ea066);
-                    border: 1px solid rgba(62, 160, 102, 0.4);
-                  "
-                >
-                  <div class="sw-k" style="right: 3px"></div>
-                </div>
-              </div>
-              <div class="sw-row" onclick="toggleFx('glow')">
-                <span class="sw-l">🌟 هالة نورانية</span>
-                <div
-                  class="sw"
-                  id="sw-glow"
-                  style="
-                    background: linear-gradient(135deg, #245c38, #3ea066);
-                    border: 1px solid rgba(62, 160, 102, 0.4);
-                  "
-                >
-                  <div class="sw-k" style="right: 3px"></div>
-                </div>
-              </div>
-              <div class="sw-row" onclick="toggleFx('particles')">
-                <span class="sw-l">✨ جسيمات متطايرة</span>
-                <div
-                  class="sw"
-                  id="sw-particles"
-                  style="
-                    background: linear-gradient(135deg, #245c38, #3ea066);
-                    border: 1px solid rgba(62, 160, 102, 0.4);
-                  "
-                >
-                  <div class="sw-k" style="right: 3px"></div>
-                </div>
-              </div>
-              <div class="sw-row" onclick="toggleFx('border')">
-                <span class="sw-l">🔲 إطار زخرفي</span>
-                <div
-                  class="sw"
-                  id="sw-border"
-                  style="
-                    background: linear-gradient(135deg, #245c38, #3ea066);
-                    border: 1px solid rgba(62, 160, 102, 0.4);
-                  "
-                >
-                  <div class="sw-k" style="right: 3px"></div>
-                </div>
-              </div>
-              <div class="sw-row" onclick="toggleFx('wave')">
-                <span class="sw-l">🎵 موجة صوتية</span>
-                <div
-                  class="sw"
-                  id="sw-wave"
-                  style="
-                    background: linear-gradient(135deg, #245c38, #3ea066);
-                    border: 1px solid rgba(62, 160, 102, 0.4);
-                  "
-                >
-                  <div class="sw-k" style="right: 3px"></div>
-                </div>
-              </div>
-              <div
-                class="sw-row"
-                onclick="toggleFx('fadein')"
-                style="border-bottom: none"
-              >
-                <span class="sw-l">🌫 ظهور تدريجي للنص</span>
-                <div
-                  class="sw"
-                  id="sw-fadein"
-                  style="
-                    background: linear-gradient(135deg, #245c38, #3ea066);
-                    border: 1px solid rgba(62, 160, 102, 0.4);
-                  "
-                >
-                  <div class="sw-k" style="right: 3px"></div>
-                </div>
-              </div>
-            </div>
-          </div>
           <div class="sec">
             <span class="lbl">علامة مائية</span>
             <input
@@ -6594,18 +6475,20 @@
         }
       }
 
+      let _drawLoopGen = 0;
       function startDrawLoop() {
         if (drawLoopActive) return;
         drawLoopActive = true;
         lastDrawTime = 0;
+        const myGen = ++_drawLoopGen;
         function loop(ts) {
-          if (!drawLoopActive) return;
-          const ready = isExporting
-            ? true // تصدير: ارسم كل frame بدون قيود
-            : _cstateDirty && ts - lastDrawTime >= 50; // معاينة: فقط لما يتغيّر شيء
+          if (!drawLoopActive || myGen !== _drawLoopGen) return;
+          // أثناء التصدير: export loop يرسم — draw loop يوقف نفسه
+          if (isExporting) { drawLoopActive = false; return; }
+          const ready = _cstateDirty && ts - lastDrawTime >= 50;
           if (ready) {
             lastDrawTime = ts;
-            _cstateDirty = true; // أجبر syncCSTATE على القراءة دائماً أثناء التصدير
+            _cstateDirty = true;
             syncCSTATE();
             drawFrameDirect();
           }
@@ -6615,6 +6498,7 @@
       }
       function stopDrawLoop() {
         drawLoopActive = false;
+        _drawLoopGen = (_drawLoopGen || 0) + 1;
       }
 
       let exportRecorder = null,
@@ -6685,6 +6569,12 @@
         xHide();
         _stopProgressIv();
         stopDrawLoop();
+        canvas.width  = 540;
+        canvas.height = 960;
+        _gradCache = null;
+        _mtCache.clear();
+        if (window._ornCache) window._ornCache = null;
+        markCstateDirty();
         lastDrawTime = 0;
         startDrawLoop();
         if (ctx) ctx.close().catch(() => {});
@@ -7102,6 +6992,12 @@
         isExporting = false;
         _stopProgressIv();
         stopDrawLoop();
+        canvas.width  = 540;
+        canvas.height = 960;
+        _gradCache = null;
+        _mtCache.clear();
+        if (window._ornCache) window._ornCache = null;
+        markCstateDirty();
         updateExportBtn(false);
         xHide();
         startDrawLoop();
@@ -7208,12 +7104,13 @@
           for (const sc of window._expChunkAt) {
             if (f === sc.f) {
               showChunk(sc.ci, true);
-
             }
           }
         }
-        // وقت الـ frame بالثواني للحركة على الـ canvas
-        window._expFrameTimeSec = _expElapsedBefore + (f * msPerFrame / 1000);
+        // وقت الـ frame — يُمرَّر عبر window._expGlobalFrame من _exportMP4
+        window._expFrameTimeSec = typeof window._expGlobalFrame === 'number'
+          ? window._expGlobalFrame / (window._expFPS || 30)
+          : _expElapsedBefore + (f * msPerFrame / 1000);
         _cstateDirty = true;
         syncCSTATE();
         drawFrameDirect();
@@ -7401,14 +7298,15 @@
             : 30;
           const qp = {
             ..._baseQp,
-            w: canvas.width,
-            h: canvas.height,
             bitrate: _selBitrate,
             fps: _selFps,
           };
-
+          canvas.width  = qp.w;
+          canvas.height = qp.h;
           _gradCache = null;
           _mtCache.clear();
+          if (window._ornCache) window._ornCache = null;
+          markCstateDirty();
           stopDrawLoop();
           isExporting = true;
           window._dbgLogged = false;
@@ -7420,7 +7318,7 @@
           const canMP4 =
             typeof VideoEncoder !== "undefined" &&
             typeof AudioEncoder !== "undefined" &&
-            (typeof Mp4Muxer !== "undefined" || window._mp4MuxerLoaded);
+            typeof Mp4Muxer !== "undefined";
 
           if (_exportFmt === "mp4" && _turboMode && canMP4) {
             toast$("⚡ تصدير MP4 بصوت مخصص...");
@@ -7606,14 +7504,15 @@
           : 30;
         const qp = {
           ..._baseQp,
-          w: canvas.width,
-          h: canvas.height,
           bitrate: _selBitrate,
           fps: _selFps,
         };
-        // لا نغيّر canvas.width / canvas.height — نصدّر بالحجم الحالي
+        canvas.width  = qp.w;
+        canvas.height = qp.h;
         _gradCache = null;
         _mtCache.clear();
+        if (window._ornCache) window._ornCache = null;
+        markCstateDirty();
         stopDrawLoop();
         isExporting = true;
         window._dbgLogged = false;
@@ -7621,27 +7520,12 @@
         // وقف الـ slideshow أثناء التصدير
         if (window._bgSlideTimer) { clearInterval(window._bgSlideTimer); window._bgSlideTimer = null; }
 
-        // انتظر تحميل mp4-muxer لو لسه شغّال (max 5 ثواني)
-        if (!window._mp4MuxerLoaded && typeof Mp4Muxer === "undefined") {
-          toast$("⏳ جاري تحميل مكتبة MP4...");
-          await new Promise(resolve => {
-            let waited = 0;
-            const check = setInterval(() => {
-              waited += 200;
-              if (window._mp4MuxerLoaded || typeof Mp4Muxer !== "undefined" || waited >= 5000) {
-                clearInterval(check);
-                resolve();
-              }
-            }, 200);
-          });
-        }
-
         // اختيار المسار
         /* canMP4: نتحقق من Mp4Muxer (CDN) أو _mp4MuxerLoaded (loaded async) */
         const canMP4 =
           typeof VideoEncoder !== "undefined" &&
           typeof AudioEncoder !== "undefined" &&
-          (typeof Mp4Muxer !== "undefined" || window._mp4MuxerLoaded);
+          typeof Mp4Muxer !== "undefined";
 
         if (_exportFmt === "mp4" && _turboMode && canMP4) {
           toast$("⚡ تصدير MP4...");
@@ -7745,7 +7629,7 @@
         // بناء audio arrays — SR الحقيقي من الـ buffers مع ثانيتين padding
         const actualSR = buffers[0].sampleRate;
         const actualTotalSamp =
-          buffers.reduce((s, b) => s + b.length, 0) + actualSR * 2;
+          buffers.reduce((s, b) => s + b.length, 0) + Math.ceil(actualSR * 0.5);
         const aL = new Float32Array(actualTotalSamp),
           aR = new Float32Array(actualTotalSamp);
         let aOff = 0;
@@ -7769,14 +7653,29 @@
           finalL = new Float32Array(totalSamp);
           finalR = new Float32Array(totalSamp);
           for (let i = 0; i < totalSamp; i++) {
-            const src = Math.min(Math.floor(i / ratio), actualTotalSamp - 1);
-            finalL[i] = aL[src];
-            finalR[i] = aR[src];
+            const sf = i / ratio;
+            const si = Math.min(Math.floor(sf), actualTotalSamp - 1);
+            const fr = sf - si;
+            const sn2 = Math.min(si + 1, actualTotalSamp - 1);
+            finalL[i] = aL[si] * (1 - fr) + aL[sn2] * fr;
+            finalR[i] = aR[si] * (1 - fr) + aR[sn2] * fr;
           }
         }
 
-        let globalFrame = 0,
-          audioSent = 0;
+        let globalFrame = 0;
+        // audioBaseOffset[idx] = بداية صوت الآية في finalL بعد resample
+        // يمنع تراكم الـ drift بين الآيات
+        const audioBaseOffset = [];
+        {
+          let _off = 0;
+          for (let i = 0; i < buffers.length; i++) {
+            audioBaseOffset.push(_off);
+            const _rLen = actualSR === SR
+              ? buffers[i].length
+              : Math.round(buffers[i].length * (SR / actualSR));
+            _off += _rLen;
+          }
+        }
         const sampPerFrame = Math.round(SR / FPS);
 
         // preload كل صور الخلفية قبل لوب التصدير
@@ -7799,6 +7698,8 @@
             buf = buffers[idx];
 
           _prepVerse(vd, exportAyahs);
+          markCstateDirty();
+          syncCSTATE();
           window._expChunkAt = [];
           if (verseChunks.length > 1) {
             const ft = window._masFullTimings;
@@ -7846,25 +7747,35 @@
           for (let f = 0; f < ayahFrames; f++) {
             if (_expAbort || vEncErr) break;
 
+            window._expGlobalFrame = globalFrame;
+            window._expFPS = FPS;
             hlActive = _drawVerseFrame(vd, f, msPerFrame, hlActive);
 
-            // audio chunk لهذا الـ frame
-            if (audioSent < totalSamp) {
-              const aLen = Math.min(sampPerFrame, totalSamp - audioSent);
-              const planar = new Float32Array(aLen * 2);
-              planar.set(finalL.subarray(audioSent, audioSent + aLen), 0);
-              planar.set(finalR.subarray(audioSent, audioSent + aLen), aLen);
-              audioEnc.encode(
-                new AudioData({
+            // audio chunk — per-ayah base offset + local frame offset (zero drift)
+            {
+              const _ayahBase = audioBaseOffset[idx];
+              const _ayahRLen = actualSR === SR
+                ? buf.length
+                : Math.round(buf.length * (SR / actualSR));
+              const _localOff  = Math.round((f / FPS) * SR);
+              const _localNext = Math.min(Math.round(((f + 1) / FPS) * SR), _ayahRLen);
+              const _absOff    = _ayahBase + _localOff;
+              const aLen       = Math.max(0, _localNext - _localOff);
+              if (aLen > 0 && _absOff + aLen <= totalSamp) {
+                const planar = new Float32Array(aLen * 2);
+                planar.set(finalL.slice(_absOff, _absOff + aLen), 0);
+                planar.set(finalR.slice(_absOff, _absOff + aLen), aLen);
+                const ad = new AudioData({
                   format: "f32-planar",
                   sampleRate: SR,
                   numberOfFrames: aLen,
                   numberOfChannels: 2,
-                  timestamp: Math.round((audioSent / SR) * 1e6),
-                  data: planar,
-                }),
-              );
-              audioSent += aLen;
+                  timestamp: Math.round((_absOff / SR) * 1e6),
+                  data: planar.buffer,
+                });
+                audioEnc.encode(ad);
+                ad.close();
+              }
             }
 
             // video frame
@@ -7879,11 +7790,10 @@
 
             _setProgress(_expElapsedBefore + f / FPS);
 
-            // ← Queue Drain Guard: ننتظر لو الـ queue امتلأ (حد 6 بدل 10)
-            while (videoEnc.encodeQueueSize > 6) {
-              await new Promise((r) => setTimeout(r, 4));
+            while (videoEnc.encodeQueueSize > 20) {
+              await new Promise((r) => setTimeout(r, 1));
             }
-            if (f % 4 === 0) await new Promise((r) => setTimeout(r, 0));
+            if (f % 30 === 0) await new Promise((r) => setTimeout(r, 0));
           }
 
           if (hlActive >= 0) {
@@ -7898,23 +7808,26 @@
 
         // نضيف ثانيتين audio صامت + video بعد آخر آية تضمن تسجيل آخر كلمة
         if (!_expAbort && !vEncErr) {
-          const extraFrames = Math.ceil(FPS * 2);
+          const extraFrames = Math.ceil(FPS * 0.5); // 0.5s tail
           for (let f = 0; f < extraFrames; f++) {
             if (_expAbort || vEncErr) break;
-            if (audioSent < totalSamp) {
-              const aLen = Math.min(sampPerFrame, totalSamp - audioSent);
-              const planar = new Float32Array(aLen * 2);
-              audioEnc.encode(
-                new AudioData({
+            {
+              const _tailOff  = Math.round((globalFrame / FPS) * SR);
+              const _tailNext = Math.min(Math.round(((globalFrame + 1) / FPS) * SR), totalSamp);
+              const aLen = Math.max(0, _tailNext - _tailOff);
+              if (aLen > 0 && _tailOff < totalSamp) {
+                const planar = new Float32Array(aLen * 2);
+                const ad = new AudioData({
                   format: "f32-planar",
                   sampleRate: SR,
                   numberOfFrames: aLen,
                   numberOfChannels: 2,
-                  timestamp: Math.round((audioSent / SR) * 1e6),
-                  data: planar,
-                }),
-              );
-              audioSent += aLen;
+                  timestamp: Math.round((_tailOff / SR) * 1e6),
+                  data: planar.buffer,
+                });
+                audioEnc.encode(ad);
+                ad.close();
+              }
             }
             const ts = globalFrame * frameDurUs;
             const vf = new VideoFrame(canvas, {
@@ -7924,9 +7837,8 @@
             videoEnc.encode(vf, { keyFrame: false });
             vf.close();
             globalFrame++;
-            while (videoEnc.encodeQueueSize > 6)
-              await new Promise((r) => setTimeout(r, 4));
-            if (f % 4 === 0) await new Promise((r) => setTimeout(r, 0));
+            while (videoEnc.encodeQueueSize > 20)
+              await new Promise((r) => setTimeout(r, 1));
           }
         }
 
@@ -8022,6 +7934,8 @@
           const vd = verseData[idx],
             buf = buffers[idx];
           _prepVerse(vd, exportAyahs);
+          markCstateDirty();
+          syncCSTATE();
           window._expChunkAt = [];
           if (verseChunks.length > 1) {
             const ft = window._masFullTimings;
@@ -8072,6 +7986,8 @@
           let hlActive = -1;
           for (let f = 0; f < ayahFrames; f++) {
             if (_expAbort) break;
+            window._expGlobalFrame = globalFrame;
+            window._expFPS = FPS;
             hlActive = _drawVerseFrame(vd, f, msPerFrame, hlActive);
             const blob = await new Promise((res) =>
               canvas.toBlob(res, "image/jpeg", 0.88),
@@ -8102,7 +8018,7 @@
         // نستخدم sample rate الـ buffers الأصلي عشان ما نحتاجش resample
         const SR = buffers[0].sampleRate;
         const nCh = 2;
-        const TAIL = Math.ceil(SR * 2);
+        const TAIL = Math.ceil(SR * 0.5); // 0.5s tail to prevent audio cutoff
 
         let totalSamp = 0;
         buffers.forEach((b) => {
@@ -8622,14 +8538,14 @@
         size: 14,
         color: "#fff",
         fx: {
-          moon: true,
-          stars: true,
-          glow: true,
-          trans: true,
-          particles: true,
-          border: true,
+          moon: false,
+          stars: false,
+          glow: false,
+          trans: false,
+          particles: false,
+          border: false,
           wave: true,
-          fadein: true,
+          fadein: false,
         },
         playing: false,
         _orn: {
@@ -11068,8 +10984,9 @@
       /* Service Worker */
       window.addEventListener("load", () => {
         if (!("serviceWorker" in navigator)) return;
+        const _swBase = location.pathname.replace(/\/[^\/]*$/, '/') || '/';
         navigator.serviceWorker
-          .register("/sw.js", { scope: "/" })
+          .register(_swBase + 'sw.js', { scope: _swBase })
           .then((reg) => {
             console.log("[SW] registered, scope:", reg.scope);
             reg.addEventListener("updatefound", () => {
@@ -11558,9 +11475,9 @@
         MAS.chunkTimings = {};
         MAS.chunkIdx = 0;
         MAS.startTime = Date.now();
-        MAS.ayahStartGlobal = 0; // الوقت الكلي لبداية كل آية
+        MAS.ayahStartGlobal = 0;
 
-        // سجّل بداية أول آية
+        // سجّل بداية أول آية — في CAS mode نبدأ من 0 (الصوت سيُعاد من البداية)
         MAS.timings[q[0]] = { start: 0, end: null };
         MAS.chunks = _masGetChunks(q[0]);
         MAS.chunkTimings[q[0]] = [
@@ -11692,8 +11609,11 @@
         var cur = q[MAS.idx];
         var now = _masNow();
 
-        // الوقت الحالي = globalT (من بداية كل الجلسة)
-        var globalT = MAS.ayahStartGlobal + now.t;
+        // CAS mode: now.t = casAudio.currentTime = absolute من بداية الملف
+        // Sheikh mode: now.t = clip currentTime = relative للـ آية → نضيف ayahStartGlobal
+        var globalT = (now.mode === 'cas')
+          ? now.t
+          : MAS.ayahStartGlobal + now.t;
 
         // أغلق المقطع الحالي
         var ct = MAS.chunkTimings[cur];
@@ -12695,5 +12615,107 @@
         };
       })();
     </script>
+
+  <!-- ══ PWA Install Prompt ══ -->
+  <div id="_pwaPrompt" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99998;padding:12px 16px 20px;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.3));pointer-events:none;">
+    <div style="background:linear-gradient(160deg,#1a2e1f,#0f2415);border:1px solid rgba(201,151,58,0.4);border-radius:20px;padding:18px 16px;box-shadow:0 -4px 40px rgba(0,0,0,0.6),0 0 0 1px rgba(255,255,255,0.05);font-family:'Cairo',sans-serif;direction:rtl;pointer-events:all;animation:_pwaSlideUp .4s cubic-bezier(.4,0,.2,1);">
+
+      <!-- Header -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#1a3a25,#245c38);border:1px solid rgba(201,151,58,0.3);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">🌙</div>
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:15px;color:#e4b55a;">Islam Reels</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">ثبِّت التطبيق مجاناً</div>
+        </div>
+        <button onclick="_pwaDismiss()" style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.08);border:none;cursor:pointer;color:rgba(255,255,255,0.6);font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+      </div>
+
+      <!-- Features -->
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border-radius:10px;padding:9px 12px;">
+          <div style="width:28px;height:28px;border-radius:8px;background:rgba(201,151,58,0.2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">⚡</div>
+          <span style="font-size:12px;color:rgba(255,255,255,0.75);">تشغيل فوري بدون تحميل</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border-radius:10px;padding:9px 12px;">
+          <div style="width:28px;height:28px;border-radius:8px;background:rgba(62,160,102,0.2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">📱</div>
+          <span style="font-size:12px;color:rgba(255,255,255,0.75);">تجربة تطبيق أصيلة</span>
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div style="display:flex;gap:10px;">
+        <button onclick="_pwaDismiss()" style="flex:1;padding:11px;border-radius:11px;cursor:pointer;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6);font-family:'Cairo',sans-serif;font-size:13px;font-weight:600;">لاحقاً</button>
+        <button onclick="_pwaInstall()" id="_pwaInstallBtn" style="flex:2;padding:11px;border-radius:11px;cursor:pointer;background:linear-gradient(135deg,#c9973a,#e4b55a);border:none;color:#0a1a0d;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(201,151,58,0.4);display:flex;align-items:center;justify-content:center;gap:6px;">
+          <span>⬇</span> تثبيت الآن
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <style>
+    @keyframes _pwaSlideUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+  </style>
+  <script>
+  (function(){
+    var _pwaDeferred = null;
+    var _pwaPromptEl = document.getElementById('_pwaPrompt');
+
+    // Intercept browser install prompt
+    window.addEventListener('beforeinstallprompt', function(e){
+      e.preventDefault();
+      _pwaDeferred = e;
+      // Show after 3 seconds delay
+      setTimeout(function(){
+        if(!localStorage.getItem('_pwaDismissed')) {
+          _pwaPromptEl.style.display = 'block';
+        }
+      }, 3000);
+    });
+
+    // iOS detection - show manual install hint
+    var isIOS = /iP(hone|od|ad)/.test(navigator.userAgent) && !window.MSStream;
+    var isInStandaloneMode = window.navigator.standalone === true;
+    if(isIOS && !isInStandaloneMode && !localStorage.getItem('_pwaDismissed')){
+      setTimeout(function(){
+        _pwaInstallBtn_iOS();
+      }, 3000);
+    }
+
+    window._pwaInstall = function(){
+      if(_pwaDeferred){
+        _pwaDeferred.prompt();
+        _pwaDeferred.userChoice.then(function(r){
+          _pwaDeferred = null;
+          _pwaPromptEl.style.display = 'none';
+          if(r.outcome === 'accepted') localStorage.setItem('_pwaDismissed','1');
+        });
+      }
+    };
+
+    window._pwaDismiss = function(){
+      _pwaPromptEl.style.display = 'none';
+      localStorage.setItem('_pwaDismissed','1');
+    };
+
+    // iOS: change install button to show instructions
+    window._pwaInstallBtn_iOS = function(){
+      var btn = document.getElementById('_pwaInstallBtn');
+      if(btn){
+        btn.onclick = function(){
+          _pwaPromptEl.style.display = 'none';
+          alert('لتثبيت التطبيق على iOS:\n1. اضغط على زر المشاركة ⬆\n2. اختر "إضافة إلى الشاشة الرئيسية"');
+        };
+        _pwaPromptEl.style.display = 'block';
+      }
+    };
+
+    // Hide if already installed
+    window.addEventListener('appinstalled', function(){
+      _pwaPromptEl.style.display = 'none';
+      localStorage.setItem('_pwaDismissed','1');
+    });
+  })();
+  </script>
   </body>
 </html>
