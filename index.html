@@ -17,7 +17,6 @@
     "
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="manifest" href="/manifest.json" />
     <!-- PWA -->
     <meta name="theme-color" content="#c9973a" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -2865,8 +2864,295 @@
         }
       }
     </style>
+
+    <!-- ══════════════════════════════════════════
+         PWA INSTALL PROMPT — نافذة تثبيت التطبيق
+    ══════════════════════════════════════════ -->
+    <style>
+      /* ── PWA Install Prompt ── */
+      #pwaBanner {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.35s ease;
+        padding: 0 0 env(safe-area-inset-bottom, 0);
+      }
+      #pwaBanner.pwa-show {
+        opacity: 1;
+        pointer-events: all;
+      }
+      /* ديسكتوب: تظهر في المنتصف كـ modal */
+      @media (min-width: 769px) {
+        #pwaBanner {
+          align-items: center;
+        }
+        #pwaCard {
+          border-radius: 20px !important;
+          max-width: 420px !important;
+          width: 90% !important;
+          transform: translateY(30px) scale(0.96);
+          transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s ease !important;
+        }
+        #pwaBanner.pwa-show #pwaCard {
+          transform: translateY(0) scale(1);
+        }
+      }
+      #pwaCard {
+        background: #0f1f15;
+        border: 1px solid rgba(201, 151, 58, 0.25);
+        border-bottom: none;
+        border-radius: 20px 20px 0 0;
+        padding: 0 0 env(safe-area-inset-bottom, 12px);
+        width: 100%;
+        max-width: 520px;
+        box-shadow: 0 -8px 48px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(201,151,58,0.08);
+        transform: translateY(100%);
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        overflow: hidden;
+      }
+      #pwaBanner.pwa-show #pwaCard {
+        transform: translateY(0);
+      }
+      .pwa-handle {
+        width: 38px;
+        height: 4px;
+        background: rgba(201, 151, 58, 0.3);
+        border-radius: 99px;
+        margin: 12px auto 0;
+      }
+      .pwa-inner {
+        padding: 16px 20px 20px;
+      }
+      .pwa-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .pwa-app-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+      }
+      .pwa-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #1a3d24, #245c38, #3ea066);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        flex-shrink: 0;
+        box-shadow: 0 4px 16px rgba(62,160,102,0.3);
+      }
+      .pwa-title-block {
+        flex: 1;
+      }
+      .pwa-app-name {
+        font-family: "Cairo", sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        color: #f0ebe1;
+        line-height: 1.2;
+      }
+      .pwa-subtitle {
+        font-size: 12px;
+        color: #c9973a;
+        margin-top: 2px;
+      }
+      .pwa-close {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.07);
+        border: none;
+        color: #6e8878;
+        font-size: 15px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: background 0.2s, color 0.2s;
+        line-height: 1;
+      }
+      .pwa-close:hover {
+        background: rgba(255,255,255,0.14);
+        color: #f0ebe1;
+      }
+      .pwa-features {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 18px;
+        background: rgba(255,255,255,0.025);
+        border: 1px solid rgba(201,151,58,0.1);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      .pwa-feat {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: #c8d8cc;
+      }
+      .pwa-feat-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: rgba(201,151,58,0.12);
+        border: 1px solid rgba(201,151,58,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        flex-shrink: 0;
+      }
+      /* ميزة خاصة بالجهاز */
+      .pwa-device-badge {
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 99px;
+        background: rgba(62,160,102,0.15);
+        border: 1px solid rgba(62,160,102,0.3);
+        color: #3ea066;
+        margin-bottom: 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .pwa-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .pwa-btn-later {
+        padding: 11px 18px;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: #8fa89a;
+        font-family: "Cairo", sans-serif;
+        font-size: 13px;
+        cursor: pointer;
+        transition: background 0.2s;
+        white-space: nowrap;
+      }
+      .pwa-btn-later:hover {
+        background: rgba(255,255,255,0.1);
+        color: #c8d8cc;
+      }
+      .pwa-btn-install {
+        flex: 1;
+        padding: 13px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #b8851f, #e4b55a, #c9973a);
+        border: none;
+        color: #0f1f15;
+        font-family: "Cairo", sans-serif;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        transition: opacity 0.2s, transform 0.15s;
+        box-shadow: 0 4px 20px rgba(201,151,58,0.35);
+      }
+      .pwa-btn-install:hover {
+        opacity: 0.92;
+        transform: translateY(-1px);
+      }
+      .pwa-btn-install:active {
+        transform: translateY(0);
+        opacity: 0.85;
+      }
+      /* iOS خاص */
+      #pwaIosSteps {
+        display: none;
+        margin-top: 14px;
+        padding: 12px 14px;
+        background: rgba(201,151,58,0.07);
+        border: 1px solid rgba(201,151,58,0.2);
+        border-radius: 10px;
+        font-size: 12px;
+        color: #c8d8cc;
+        line-height: 1.9;
+      }
+      #pwaIosSteps b {
+        color: #e4b55a;
+      }
+    </style>
+
   </head>
   <body>
+
+    <!-- ══ PWA Install Prompt HTML ══ -->
+    <div id="pwaBanner" role="dialog" aria-modal="true" aria-label="تثبيت التطبيق">
+      <div id="pwaCard">
+        <div class="pwa-handle"></div>
+        <div class="pwa-inner">
+          <div class="pwa-header">
+            <div class="pwa-app-info">
+              <div class="pwa-icon">🌙</div>
+              <div class="pwa-title-block">
+                <div class="pwa-app-name">Islam Reels</div>
+                <div class="pwa-subtitle">ثبّت التطبيق مجاناً</div>
+              </div>
+            </div>
+            <button class="pwa-close" onclick="pwaDismiss()" aria-label="إغلاق">✕</button>
+          </div>
+
+          <div class="pwa-device-badge" id="pwaDeviceBadge">
+            <span>📱</span>
+            <span id="pwaDeviceLabel">جهازك الحالي</span>
+          </div>
+
+          <div class="pwa-features">
+            <div class="pwa-feat">
+              <div class="pwa-feat-icon">⚡</div>
+              <span>تشغيل فوري بدون تحميل</span>
+            </div>
+            <div class="pwa-feat">
+              <div class="pwa-feat-icon" id="pwaFeatIcon2">📱</div>
+              <span id="pwaFeatText2">تجربة تطبيق أصيلة</span>
+            </div>
+            <div class="pwa-feat">
+              <div class="pwa-feat-icon">🔒</div>
+              <span>يعمل بدون إنترنت بعد أول تحميل</span>
+            </div>
+          </div>
+
+          <!-- خطوات iOS -->
+          <div id="pwaIosSteps">
+            <b>كيفية التثبيت على iOS:</b><br>
+            ١. اضغط على زر <b>المشاركة</b> ↗ في أسفل المتصفح<br>
+            ٢. اختر <b>«إضافة إلى الشاشة الرئيسية»</b><br>
+            ٣. اضغط <b>«إضافة»</b>
+          </div>
+
+          <div class="pwa-actions">
+            <button class="pwa-btn-later" onclick="pwaDismiss()">لاحقاً</button>
+            <button class="pwa-btn-install" id="pwaBtnInstall" onclick="pwaInstall()">
+              <span>⬇</span> تثبيت الآن
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- ══════════════════════════════════════════
        LANDING PAGE — تظهر أول ما يفتح الموقع
   ══════════════════════════════════════════ -->
@@ -12616,106 +12902,193 @@
       })();
     </script>
 
-  <!-- ══ PWA Install Prompt ══ -->
-  <div id="_pwaPrompt" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99998;padding:12px 16px 20px;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.3));pointer-events:none;">
-    <div style="background:linear-gradient(160deg,#1a2e1f,#0f2415);border:1px solid rgba(201,151,58,0.4);border-radius:20px;padding:18px 16px;box-shadow:0 -4px 40px rgba(0,0,0,0.6),0 0 0 1px rgba(255,255,255,0.05);font-family:'Cairo',sans-serif;direction:rtl;pointer-events:all;animation:_pwaSlideUp .4s cubic-bezier(.4,0,.2,1);">
+    <!-- ══════════════════════════════════════════
+         PWA Install Prompt — JavaScript
+    ══════════════════════════════════════════ -->
+    <script>
+      (function () {
+        "use strict";
 
-      <!-- Header -->
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
-        <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#1a3a25,#245c38);border:1px solid rgba(201,151,58,0.3);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">🌙</div>
-        <div style="flex:1;">
-          <div style="font-weight:700;font-size:15px;color:#e4b55a;">Islam Reels</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">ثبِّت التطبيق مجاناً</div>
-        </div>
-        <button onclick="_pwaDismiss()" style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.08);border:none;cursor:pointer;color:rgba(255,255,255,0.6);font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
-      </div>
+        var _deferredPrompt = null;
+        var _shown = false;
 
-      <!-- Features -->
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
-        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border-radius:10px;padding:9px 12px;">
-          <div style="width:28px;height:28px;border-radius:8px;background:rgba(201,151,58,0.2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">⚡</div>
-          <span style="font-size:12px;color:rgba(255,255,255,0.75);">تشغيل فوري بدون تحميل</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border-radius:10px;padding:9px 12px;">
-          <div style="width:28px;height:28px;border-radius:8px;background:rgba(62,160,102,0.2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">📱</div>
-          <span style="font-size:12px;color:rgba(255,255,255,0.75);">تجربة تطبيق أصيلة</span>
-        </div>
-      </div>
-
-      <!-- Buttons -->
-      <div style="display:flex;gap:10px;">
-        <button onclick="_pwaDismiss()" style="flex:1;padding:11px;border-radius:11px;cursor:pointer;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6);font-family:'Cairo',sans-serif;font-size:13px;font-weight:600;">لاحقاً</button>
-        <button onclick="_pwaInstall()" id="_pwaInstallBtn" style="flex:2;padding:11px;border-radius:11px;cursor:pointer;background:linear-gradient(135deg,#c9973a,#e4b55a);border:none;color:#0a1a0d;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(201,151,58,0.4);display:flex;align-items:center;justify-content:center;gap:6px;">
-          <span>⬇</span> تثبيت الآن
-        </button>
-      </div>
-
-    </div>
-  </div>
-
-  <style>
-    @keyframes _pwaSlideUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
-  </style>
-  <script>
-  (function(){
-    var _pwaDeferred = null;
-    var _pwaPromptEl = document.getElementById('_pwaPrompt');
-
-    // Intercept browser install prompt
-    window.addEventListener('beforeinstallprompt', function(e){
-      e.preventDefault();
-      _pwaDeferred = e;
-      // Show after 3 seconds delay
-      setTimeout(function(){
-        if(!localStorage.getItem('_pwaDismissed')) {
-          _pwaPromptEl.style.display = 'block';
+        /* ── كشف نوع الجهاز ── */
+        function _getDeviceType() {
+          var ua = navigator.userAgent;
+          var isIOS = /iphone|ipad|ipod/i.test(ua);
+          var isAndroid = /android/i.test(ua);
+          var isMobile = isIOS || isAndroid || /mobile/i.test(ua);
+          var isTablet =
+            !isMobile &&
+            (/ipad/i.test(ua) ||
+              (navigator.maxTouchPoints > 1 && !/mobile/i.test(ua)));
+          if (isIOS) return "ios";
+          if (isAndroid) return "android";
+          if (isTablet) return "tablet";
+          if (isMobile) return "mobile";
+          return "desktop";
         }
-      }, 3000);
-    });
 
-    // iOS detection - show manual install hint
-    var isIOS = /iP(hone|od|ad)/.test(navigator.userAgent) && !window.MSStream;
-    var isInStandaloneMode = window.navigator.standalone === true;
-    if(isIOS && !isInStandaloneMode && !localStorage.getItem('_pwaDismissed')){
-      setTimeout(function(){
-        _pwaInstallBtn_iOS();
-      }, 3000);
-    }
+        /* ── هل التطبيق مثبّت بالفعل؟ ── */
+        function _isInstalled() {
+          return (
+            window.matchMedia("(display-mode: standalone)").matches ||
+            window.navigator.standalone === true
+          );
+        }
 
-    window._pwaInstall = function(){
-      if(_pwaDeferred){
-        _pwaDeferred.prompt();
-        _pwaDeferred.userChoice.then(function(r){
-          _pwaDeferred = null;
-          _pwaPromptEl.style.display = 'none';
-          if(r.outcome === 'accepted') localStorage.setItem('_pwaDismissed','1');
+        /* ── هل تجاوز المستخدم النافذة قريباً؟ ── */
+        function _wasDismissed() {
+          try {
+            var ts = parseInt(localStorage.getItem("pwa_dismissed") || "0", 10);
+            if (!ts) return false;
+            var days = (Date.now() - ts) / (1000 * 60 * 60 * 24);
+            return days < 14;
+          } catch (e) {
+            return false;
+          }
+        }
+
+        /* ── تحديث واجهة البانر حسب الجهاز ── */
+        function _customizeForDevice(deviceType) {
+          var badgeEl = document.getElementById("pwaDeviceBadge");
+          var labelEl = document.getElementById("pwaDeviceLabel");
+          var feat2Icon = document.getElementById("pwaFeatIcon2");
+          var feat2Text = document.getElementById("pwaFeatText2");
+          var btnInstall = document.getElementById("pwaBtnInstall");
+          var iosSteps = document.getElementById("pwaIosSteps");
+
+          var deviceMap = {
+            ios: {
+              badge: "📱",
+              label: "iPhone / iPad",
+              featIcon: "🍎",
+              featText: "تجربة تطبيق iOS أصيلة",
+            },
+            android: {
+              badge: "🤖",
+              label: "Android",
+              featIcon: "🤖",
+              featText: "تجربة تطبيق Android أصيلة",
+            },
+            tablet: {
+              badge: "📲",
+              label: "تابلت",
+              featIcon: "📲",
+              featText: "تجربة ملء شاشة التابلت",
+            },
+            desktop: {
+              badge: "🖥️",
+              label: "جهاز الكمبيوتر",
+              featIcon: "🖥️",
+              featText: "تطبيق مستقل على سطح المكتب",
+            },
+            mobile: {
+              badge: "📱",
+              label: "الجوال",
+              featIcon: "📱",
+              featText: "تجربة تطبيق أصيلة",
+            },
+          };
+
+          var info = deviceMap[deviceType] || deviceMap["mobile"];
+          if (badgeEl) badgeEl.querySelector("span:first-child").textContent = info.badge;
+          if (labelEl) labelEl.textContent = info.label;
+          if (feat2Icon) feat2Icon.textContent = info.featIcon;
+          if (feat2Text) feat2Text.textContent = info.featText;
+
+          if (deviceType === "ios") {
+            if (btnInstall) {
+              btnInstall.innerHTML = "⬆ شاهد خطوات التثبيت";
+              btnInstall.onclick = function () {
+                if (iosSteps) {
+                  iosSteps.style.display =
+                    iosSteps.style.display === "block" ? "none" : "block";
+                }
+              };
+            }
+            if (iosSteps) iosSteps.style.display = "none";
+          }
+        }
+
+        /* ── عرض البانر ── */
+        function _showBanner() {
+          if (_shown) return;
+          _shown = true;
+          var deviceType = _getDeviceType();
+          _customizeForDevice(deviceType);
+          var banner = document.getElementById("pwaBanner");
+          if (banner) {
+            banner.classList.add("pwa-show");
+            banner.setAttribute("aria-hidden", "false");
+          }
+        }
+
+        /* ── إخفاء البانر ── */
+        function _hideBanner() {
+          var banner = document.getElementById("pwaBanner");
+          if (banner) {
+            banner.classList.remove("pwa-show");
+            banner.setAttribute("aria-hidden", "true");
+          }
+        }
+
+        /* ── رفع الحدث عند الضغط على الخلفية ── */
+        document.getElementById("pwaBanner").addEventListener("click", function (e) {
+          if (e.target === this) pwaDismiss();
         });
-      }
-    };
 
-    window._pwaDismiss = function(){
-      _pwaPromptEl.style.display = 'none';
-      localStorage.setItem('_pwaDismissed','1');
-    };
-
-    // iOS: change install button to show instructions
-    window._pwaInstallBtn_iOS = function(){
-      var btn = document.getElementById('_pwaInstallBtn');
-      if(btn){
-        btn.onclick = function(){
-          _pwaPromptEl.style.display = 'none';
-          alert('لتثبيت التطبيق على iOS:\n1. اضغط على زر المشاركة ⬆\n2. اختر "إضافة إلى الشاشة الرئيسية"');
+        /* ── API عامة ── */
+        window.pwaDismiss = function () {
+          _hideBanner();
+          try {
+            localStorage.setItem("pwa_dismissed", String(Date.now()));
+          } catch (e) {}
         };
-        _pwaPromptEl.style.display = 'block';
-      }
-    };
 
-    // Hide if already installed
-    window.addEventListener('appinstalled', function(){
-      _pwaPromptEl.style.display = 'none';
-      localStorage.setItem('_pwaDismissed','1');
-    });
-  })();
-  </script>
+        window.pwaInstall = function () {
+          if (_deferredPrompt) {
+            _deferredPrompt.prompt();
+            _deferredPrompt.userChoice.then(function (choice) {
+              _deferredPrompt = null;
+              _hideBanner();
+              try {
+                localStorage.setItem(
+                  "pwa_dismissed",
+                  choice.outcome === "accepted" ? "installed" : String(Date.now())
+                );
+              } catch (e) {}
+            });
+          } else {
+            _hideBanner();
+          }
+        };
+
+        /* ── التقاط حدث beforeinstallprompt (Chrome/Android) ── */
+        window.addEventListener("beforeinstallprompt", function (e) {
+          e.preventDefault();
+          _deferredPrompt = e;
+          if (!_isInstalled() && !_wasDismissed()) {
+            setTimeout(_showBanner, 2500);
+          }
+        });
+
+        /* ── iOS Safari: لا يدعم beforeinstallprompt ── */
+        window.addEventListener("load", function () {
+          var deviceType = _getDeviceType();
+          var isIOS = deviceType === "ios";
+          var isSafari =
+            /safari/i.test(navigator.userAgent) &&
+            !/chrome|crios|fxios/i.test(navigator.userAgent);
+
+          if (isIOS && isSafari && !_isInstalled() && !_wasDismissed()) {
+            setTimeout(_showBanner, 2500);
+          }
+        });
+
+        /* ── ديسكتوب / تابلت: انتظر beforeinstallprompt ── */
+        /* سيُظهر تلقائياً إذا دعم المتصفح التثبيت */
+      })();
+    </script>
   </body>
 </html>
