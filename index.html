@@ -7712,7 +7712,8 @@
             typeof AudioEncoder !== "undefined" &&
             typeof Mp4Muxer !== "undefined";
 
-          if (_exportFmt === "mp4" && _turboMode && canMP4) {
+          const _useWebM_cas = _isIOS || !(_exportFmt === "mp4" && _turboMode && canMP4);
+          if (!_useWebM_cas) {
             toast$("⚡ تصدير MP4 بصوت مخصص...");
             setSbar("🔴 يصدّر " + timings.length + " آية...", "#f47c7c");
             await _exportMP4(
@@ -7724,7 +7725,7 @@
               timings.length,
             );
           } else {
-            toast$("🔴 تصدير WebM بصوت مخصص...");
+            toast$("🔴 تصدير فيديو بصوت مخصص...");
             setSbar("🔴 يسجّل " + timings.length + " آية...", "#f47c7c");
             await _exportWebM(
               expCtx,
@@ -7919,12 +7920,16 @@
           typeof AudioEncoder !== "undefined" &&
           typeof Mp4Muxer !== "undefined";
 
-        if (_exportFmt === "mp4" && _turboMode && canMP4) {
+        // على iOS: نجبر WebM path (MediaRecorder) لأنه يدعم MP4 مباشرةً هناك
+        // WebCodecs على iOS 17 مش مكتمل بما يكفي للـ muxer
+        const _useWebM = _isIOS || !(_exportFmt === "mp4" && _turboMode && canMP4);
+
+        if (!_useWebM) {
           toast$("⚡ تصدير MP4...");
           setSbar("🔴 يصدّر " + total + " آية...", "#f47c7c");
           await _exportMP4(expCtx, qp, buffers, verseData, exportAyahs, total);
         } else {
-          toast$("🔴 تصدير WebM...");
+          toast$("🔴 تصدير فيديو...");
           setSbar("🔴 يسجّل " + total + " آية...", "#f47c7c");
           await _exportWebM(expCtx, qp, buffers, verseData, exportAyahs, total);
         }
@@ -8273,18 +8278,13 @@
           const blob = new Blob([muxer.target.buffer], { type: "video/mp4" });
           if (blob.size < 1000) throw new Error("ملف تالف");
           const mb = (blob.size / 1024 / 1024).toFixed(1);
-          if (_isIOS) {
-            // iOS: popup مخصص مع Web Share API
-            _downloadBlob(
-              blob,
-              "Islam-Reels-" + (S.surah?.ar || "قرآن") + ".mp4",
-            );
-          } else {
-            // غير iOS: popup الفيديو + تنزيل تلقائي
-            showVideoPopup(
-              blob,
-              "Islam-Reels-" + (S.surah?.ar || "قرآن") + ".mp4",
-            );
+          // iOS و غير iOS: كلاهم يعرض popup (فيه Web Share على iOS)
+          showVideoPopup(
+            blob,
+            "Islam-Reels-" + (S.surah?.ar || "قرآن") + ".mp4",
+          );
+          if (!_isIOS) {
+            // غير iOS: تنزيل تلقائي إضافي
             _downloadBlob(
               blob,
               "Islam-Reels-" + (S.surah?.ar || "قرآن") + ".mp4",
@@ -8440,16 +8440,21 @@
           ...expDest.stream.getAudioTracks(),
         ]);
 
-        /* ── ZIP fallback لو MediaRecorder مش متاح (iOS/Safari قديم) ── */
-        const _canWebM =
-          typeof MediaRecorder !== "undefined" &&
-          [
-            "video/webm;codecs=vp9,opus",
-            "video/webm;codecs=vp8,opus",
-            "video/webm",
-          ].some((m) => MediaRecorder.isTypeSupported(m));
+        /* ── ZIP fallback لو MediaRecorder مش متاح تماماً ── */
+        const _allCandidates = [
+          "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
+          "video/mp4;codecs=avc1,mp4a.40.2",
+          "video/mp4;codecs=h264,aac",
+          "video/mp4",
+          "video/webm;codecs=vp9,opus",
+          "video/webm;codecs=vp8,opus",
+          "video/webm",
+        ];
+        const _canRec = typeof MediaRecorder !== "undefined" &&
+          _allCandidates.some(m => { try { return MediaRecorder.isTypeSupported(m); } catch { return false; } });
+        const _canWebM = _canRec; // نستخدم نفس الـ flag بس بمعنى أشمل
 
-        if (!_canWebM) {
+        if (!_canRec) {
           toast$("📦 MediaRecorder غير متاح — تصدير ZIP frames...");
           xShow(total, total, "جارٍ تجميع ZIP...");
           setSbar("📦 جارٍ تصدير ZIP...", "#c9973a");
@@ -8520,10 +8525,21 @@
             return;
           }
 
-          // WebM — على iOS نحوّل، على غيره نحفظ مباشرةً
+          // WebM — على iOS نعرض popup مع زرار تحويل اختياري، على غيره نحفظ مباشرةً
           const webmBlob = recBlob;
 
           if (_isIOS) {
+            // iOS: عرض popup مباشرة — المستخدم يختار التحويل لو أراد
+            showVideoPopup(
+              webmBlob,
+              "Islam-Reels-" + (S.surah?.ar || "قرآن") + ".webm",
+            );
+            _setProgress(_expTotalDur);
+            _finishExport(expCtx, "✅ الفيديو جاهز — اضغط 🔄 للتحويل لـ MP4", "#5ec285");
+            return;
+          }
+
+          if (false && _isIOS) { /* disabled FFmpeg path */
             xShow(total, total, "⚙️ جارٍ تحويل WebM → MP4...");
             setSbar("⚙️ يحمّل FFmpeg...", "#c9973a");
             toast$("⚙️ جارٍ التحويل — قد يأخذ دقيقة...");
