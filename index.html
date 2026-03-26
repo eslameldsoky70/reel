@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
   <head>
 <script>
-/* mp4-muxer v5 — inlined for iOS offline support */
+/* mp4-muxer v5 — inlined for offline/iOS support */
 "use strict";
 var Mp4Muxer = (() => {
   var __defProp = Object.defineProperty;
@@ -1949,7 +1949,34 @@ window._mp4MuxerLoaded=true;
          ضع الملفات في /libs/ للعمل بدون إنترنت بعد أول تحميل (SW cache)
          SimpleZip: مضمّنة inline — لا تحتاج إنترنت ═══ -->
     <script>
-      /* mp4-muxer مدمج في <head> — لا يحتاج إنترنت */
+      /* ── mp4-muxer loader — local-first ثم CDN fallbacks ──────────
+         الأولوية: /libs/mp4-muxer.js → jsdelivr → unpkg → ZIP fallback */
+      window._mp4MuxerLoaded = false;
+      (function () {
+        const SOURCES = [
+          "https://cdn.jsdelivr.net/npm/mp4-muxer@5/build/mp4-muxer.js", // CDN 1
+          "https://unpkg.com/mp4-muxer@5/build/mp4-muxer.js",            // CDN 2
+          "/libs/mp4-muxer.js",                                           // محلي
+        ];
+        let idx = 0;
+        function tryNext() {
+          if (idx >= SOURCES.length) {
+            console.warn("mp4-muxer: all sources failed — ZIP fallback active");
+            return;
+          }
+          const s = document.createElement("script");
+          s.src = SOURCES[idx++];
+          s.onload = () => {
+            window._mp4MuxerLoaded = true;
+          };
+          s.onerror = () => {
+            console.warn("mp4-muxer failed:", s.src);
+            tryNext();
+          };
+          document.head.appendChild(s);
+        }
+        tryNext();
+      })();
 
       /* ── FFmpeg WASM loader (WebM→MP4 — iOS Safe, no SharedArrayBuffer) ──
        نستخدم @ffmpeg/core-st (single-thread) لأن iOS Safari يحجب
@@ -6905,11 +6932,11 @@ window._mp4MuxerLoaded=true;
                 </div>
               </div>
 
-              <!-- العلامة المائية -->
-              <div class="sw-row" onclick="toggleFx('watermark')">
-                <span class="sw-l">العلامة المائية</span>
+              <!-- الموجة الصوتية -->
+              <div class="sw-row" onclick="toggleFx('wave')">
+                <span class="sw-l">الموجة الصوتية</span>
                 <div
-                  id="sw-watermark"
+                  id="sw-wave"
                   class="sw"
                   style="
                     background: linear-gradient(135deg,#245c38,#3ea066);
@@ -8679,7 +8706,7 @@ window._mp4MuxerLoaded=true;
             gap = 10;
           const totalW = bars * (barW + gap);
           let bx = W / 2 - totalW / 2;
-          const baseY = H - 250;
+          const baseY = H - 200;
           for (let b = 0; b < bars; b++) {
             const amp = 0.5 + 0.5 * Math.sin(CSTATE.wavePhase + b * 0.38);
             const bh = 8 + amp * 55;
@@ -12496,16 +12523,6 @@ window._mp4MuxerLoaded=true;
           fps: 60,
           bitrate: 6_000_000,
           desc: "يوتيوب بـ 60 إطار/ثانية.",
-        },
-        ios_safe: {
-          label: "آيفون (موصى به)",
-          icon: "🍎",
-          tag: "720p · خفيف",
-          w: 720,
-          h: 1280,
-          fps: 30,
-          bitrate: 2_500_000,
-          desc: "جودة ممتازة للآيفون مع حجم ملف صغير.",
         },
         sh_eco: {
           label: "شورتس اقتصادي",
