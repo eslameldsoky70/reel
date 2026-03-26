@@ -4700,9 +4700,9 @@
                     z-index: 1;
                   "
                 ></canvas>
-                <div class="sc-geo"></div>
-                <div class="sc-glow" id="elGlow"></div>
-                <div id="elStars">
+                <div class="sc-geo" style="display:none"></div>
+                <div class="sc-glow" id="elGlow" style="display:none"></div>
+                <div id="elStars" style="display:none">
                   <div
                     style="
                       position: absolute;
@@ -4850,11 +4850,11 @@
                   id="elWave"
                   style="
                     position: absolute;
-                    bottom: 54px;
+                    bottom: 110px;
                     left: 0;
                     right: 0;
                     height: 22px;
-                    display: none;
+                    display: flex;
                     align-items: center;
                     justify-content: center;
                     gap: 2px;
@@ -4880,8 +4880,7 @@
                   <div class="wave-bar" style="animation-delay: 0.07s"></div>
                   <div class="wave-bar" style="animation-delay: 0s"></div>
                 </div>
-                <div class="sc-moon" id="elMoon">🌙</div>
-                <div class="sc-ln" style="top: 53px"></div>
+                <div class="sc-moon" id="elMoon" style="display:none">🌙</div>
                 <div class="sc-v" id="vArea">
                   <div
                     class="v-a"
@@ -4895,12 +4894,11 @@
                   </div>
                   <div class="v-r" id="vRef"></div>
                 </div>
-                <div class="sc-ln" style="bottom: 44px"></div>
                 <div
                   class="sc-info"
                   id="elSh"
                   style="
-                    bottom: 28px;
+                    bottom: 80px;
                     font-size: 8px;
                     color: rgba(140, 190, 160, 0.6);
                   "
@@ -4909,7 +4907,7 @@
                   id="elWm"
                   style="
                     position: absolute;
-                    bottom: 8px;
+                    bottom: 60px;
                     left: 0;
                     right: 0;
                     text-align: center;
@@ -4920,7 +4918,7 @@
                     pointer-events: none;
                   "
                 ></div>
-                <div class="pdot" id="pdot"></div>
+                <div class="pdot" id="pdot" style="display:none !important"></div>
               </div>
             </div>
           </div>
@@ -4958,6 +4956,92 @@
 
         <!-- RIGHT -->
         <div class="panel right">
+
+          <!-- ══ إعدادات العرض ══ -->
+          <div class="sec" style="padding: 0">
+            <div
+              onclick="toggleAcc(this)"
+              style="
+                display: flex;
+                align-items: center;
+                gap: 9px;
+                cursor: pointer;
+                padding: 13px 13px;
+                user-select: none;
+              "
+            >
+              <span style="font-size: 17px">🎬</span>
+              <span
+                style="
+                  font-size: 13px;
+                  font-weight: 700;
+                  color: #b5c4bc;
+                  flex: 1;
+                  transition: color 0.2s;
+                "
+                >إعدادات العرض</span
+              >
+              <span
+                class="acc-arrow"
+                style="
+                  color: #6e8878;
+                  font-size: 11px;
+                  transition: transform 0.2s, color 0.2s;
+                "
+                >▶</span
+              >
+            </div>
+            <div style="display: none; padding: 0 13px 12px">
+
+              <!-- اسم السورة -->
+              <div class="sw-row" onclick="toggleFx('surahName')">
+                <span class="sw-l">اسم السورة بالعربي</span>
+                <div
+                  id="sw-surahName"
+                  class="sw"
+                  style="
+                    background: linear-gradient(135deg,#245c38,#3ea066);
+                    border: 1.5px solid rgba(62,160,102,.4);
+                  "
+                >
+                  <div class="sw-k" style="right: 3px"></div>
+                </div>
+              </div>
+
+              <!-- اسم القارئ -->
+              <div class="sw-row" onclick="toggleFx('reciterName')">
+                <span class="sw-l">اسم القارئ</span>
+                <div
+                  id="sw-reciterName"
+                  class="sw"
+                  style="
+                    background: linear-gradient(135deg,#245c38,#3ea066);
+                    border: 1.5px solid rgba(62,160,102,.4);
+                  "
+                >
+                  <div class="sw-k" style="right: 3px"></div>
+                </div>
+              </div>
+
+              <!-- العلامة المائية -->
+              <div class="sw-row" onclick="toggleFx('watermark')">
+                <span class="sw-l">العلامة المائية</span>
+                <div
+                  id="sw-watermark"
+                  class="sw"
+                  style="
+                    background: linear-gradient(135deg,#245c38,#3ea066);
+                    border: 1.5px solid rgba(62,160,102,.4);
+                  "
+                >
+                  <div class="sw-k" style="right: 3px"></div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- ══ إعدادات الخط ══ -->
           <div class="sec" style="padding: 0">
             <div
               onclick="toggleAcc(this)"
@@ -6041,6 +6125,9 @@
         showBorder: false,
         showWave: false,
         showParticles: false,
+        showSurahName: true,
+        showReciterName: true,
+        showWatermark: true,
         words: [],
         particles: [],
         particlesInit: false,
@@ -6102,6 +6189,9 @@
         CSTATE.showBorder = !!S.fx.border;
         CSTATE.showWave = !!S.fx.wave;
         CSTATE.showParticles = !!S.fx.particles;
+        CSTATE.showSurahName = S.fx.surahName !== false;
+        CSTATE.showReciterName = S.fx.reciterName !== false;
+        CSTATE.showWatermark = S.fx.watermark !== false;
         CSTATE.fadein = !!S.fx.fadein;
         CSTATE._orn = S._orn || null;
         const bgMedia = document.getElementById("bgMedia");
@@ -6115,9 +6205,9 @@
             CSTATE.bgGradient = null;
             _gradCache = null;
           }
-        } else if (!isExporting) {
+        } else {
           // لما بنصدر — خلي bgImage زي ما هو (snapshot من _prepVerse)
-          CSTATE.bgImage = null;
+          if (!isExporting) CSTATE.bgImage = null;
           const newGrad =
             document.getElementById("screen")?.style.background ||
             "linear-gradient(160deg,#1a0533,#4a1080)";
@@ -6536,7 +6626,8 @@
         // ── رسم الزخرفة — مباشرة من S._orn ──
         var _o = window.S && window.S._orn;
         if (_o && _o.show && _o.pattern && _o.pattern !== "none") {
-          _drawOrnamentPattern(ctx, W, H, _o.pattern, _o.c2, _o.opacity);
+          var _pat = _o.pattern === "islamic" ? "islamic_geo" : _o.pattern;
+          _drawOrnamentPattern(ctx, W, H, _pat, _o.c2, _o.opacity);
         }
         if (CSTATE.showGlow) {
           const grd = ctx.createRadialGradient(
@@ -6580,8 +6671,6 @@
           ctx.lineTo(W - 50, y);
           ctx.stroke();
         };
-        drawHLine(200);
-        drawHLine(H - 165);
         const fontSizePx = Math.round(
           (CSTATE.fontSize / 220) * (canvas.width - 110),
         );
@@ -6615,7 +6704,7 @@
             CSTATE.fontFamily,
           );
         }
-        if (CSTATE.ref) {
+        if (CSTATE.ref && CSTATE.showSurahName) {
           ctx.font = `${fontSizePx}px "${CSTATE.fontFamily}", serif`;
           const spW = ctx.measureText(" ").width;
           let approxLines = 1,
@@ -6639,20 +6728,20 @@
           ctx.shadowBlur = 0;
           ctx.direction = "ltr";
         }
-        if (CSTATE.shName) {
+        if (CSTATE.shName && CSTATE.showReciterName) {
           ctx.font = `28px "Cairo", sans-serif`;
           ctx.textAlign = "center";
           ctx.direction = "rtl";
           ctx.fillStyle = "rgba(140,190,160,0.6)";
-          ctx.fillText(CSTATE.shName, canvas.width / 2, canvas.height - 110);
+          ctx.fillText(CSTATE.shName, canvas.width / 2, canvas.height - 200);
           ctx.direction = "ltr";
         }
-        if (CSTATE.watermark) {
+        if (CSTATE.watermark && CSTATE.showWatermark) {
           ctx.font = `28px "Cairo", sans-serif`;
           ctx.textAlign = "center";
           ctx.direction = "rtl";
           ctx.fillStyle = "rgba(255,255,255,0.28)";
-          ctx.fillText(CSTATE.watermark, canvas.width / 2, canvas.height - 55);
+          ctx.fillText(CSTATE.watermark, canvas.width / 2, canvas.height - 140);
           ctx.direction = "ltr";
         }
         if (CSTATE.showBorder) {
@@ -6708,7 +6797,7 @@
             gap = 10;
           const totalW = bars * (barW + gap);
           let bx = W / 2 - totalW / 2;
-          const baseY = H - 200;
+          const baseY = H - 250;
           for (let b = 0; b < bars; b++) {
             const amp = 0.5 + 0.5 * Math.sin(CSTATE.wavePhase + b * 0.38);
             const bh = 8 + amp * 55;
@@ -6859,6 +6948,7 @@
         markCstateDirty();
         lastDrawTime = 0;
         startDrawLoop();
+        if (typeof applyOrnament === "function") applyOrnament();
         if (ctx) ctx.close().catch(() => {});
         if (msg) {
           toast$(msg);
@@ -7283,6 +7373,7 @@
         updateExportBtn(false);
         xHide();
         startDrawLoop();
+        if (typeof applyOrnament === "function") applyOrnament();
         toast$("⏹ تم إيقاف التصدير");
       }
 
@@ -8828,6 +8919,9 @@
           border: false,
           wave: true,
           fadein: false,
+          surahName: true,
+          reciterName: true,
+          watermark: true,
         },
         playing: false,
         _orn: {
@@ -9998,11 +10092,12 @@
           var octx = oc.getContext("2d");
           octx.clearRect(0, 0, oc.width, oc.height);
           if (show && pattern !== "none") {
+            var _drawPat = pattern === "islamic" ? "islamic_geo" : pattern;
             _drawOrnamentPattern(
               octx,
               oc.width,
               oc.height,
-              pattern,
+              _drawPat,
               c2hex,
               opacity,
             );
@@ -10424,6 +10519,9 @@
           stars: "elStars",
           glow: "elGlow",
           border: "elBorder",
+          surahName: "vRef",
+          reciterName: "elSh",
+          watermark: "elWm",
         };
         if (mp[k]) $(mp[k]).style.display = on ? "block" : "none";
         if (k === "wave") {
@@ -10512,6 +10610,16 @@
           fps: 60,
           bitrate: 6_000_000,
           desc: "يوتيوب بـ 60 إطار/ثانية.",
+        },
+        ios_safe: {
+          label: "آيفون (موصى به)",
+          icon: "🍎",
+          tag: "720p · خفيف",
+          w: 720,
+          h: 1280,
+          fps: 30,
+          bitrate: 2_500_000,
+          desc: "جودة ممتازة للآيفون مع حجم ملف صغير.",
         },
         sh_eco: {
           label: "شورتس اقتصادي",
