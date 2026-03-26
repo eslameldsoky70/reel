@@ -8478,6 +8478,25 @@ window._mp4MuxerLoaded=true;
         ctx2.restore();
       }
 
+      /* roundRect polyfill — iOS 15 وما دونه لا تدعمها */
+      function _safeRoundRect(c, x, y, w, h, r) {
+        if (typeof c.roundRect === "function") {
+          c.roundRect(x, y, w, h, r);
+        } else {
+          const rr = Math.min(r, w / 2, h / 2);
+          c.moveTo(x + rr, y);
+          c.lineTo(x + w - rr, y);
+          c.arcTo(x + w, y, x + w, y + rr, rr);
+          c.lineTo(x + w, y + h - rr);
+          c.arcTo(x + w, y + h, x + w - rr, y + h, rr);
+          c.lineTo(x + rr, y + h);
+          c.arcTo(x, y + h, x, y + h - rr, rr);
+          c.lineTo(x, y + rr);
+          c.arcTo(x, y, x + rr, y, rr);
+          c.closePath();
+        }
+      }
+
       function drawFrameDirect() {
         const W = canvas.width,
           H = canvas.height;
@@ -8659,7 +8678,7 @@ window._mp4MuxerLoaded=true;
           ctx.strokeStyle = "rgba(201,151,58,0.45)";
           ctx.lineWidth = 2;
           ctx.beginPath();
-          ctx.roundRect(m, m, W - m * 2, H - m * 2, r);
+          _safeRoundRect(ctx, m, m, W - m * 2, H - m * 2, r);
           ctx.stroke();
           const cSize = 40;
           ctx.strokeStyle = "rgba(201,151,58,0.9)";
@@ -8715,7 +8734,7 @@ window._mp4MuxerLoaded=true;
             grad.addColorStop(1, "rgba(201,151,58,0.3)");
             ctx.fillStyle = grad;
             ctx.beginPath();
-            ctx.roundRect(bx, baseY - bh, barW, bh, 3);
+            _safeRoundRect(ctx, bx, baseY - bh, barW, bh, 3);
             ctx.fill();
             bx += barW + gap;
           }
