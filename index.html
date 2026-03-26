@@ -7709,10 +7709,9 @@
 
           const canMP4 =
             typeof VideoEncoder !== "undefined" &&
-            typeof AudioEncoder !== "undefined" &&
             typeof Mp4Muxer !== "undefined";
 
-          const _useWebM_cas = _isIOS || !(_exportFmt === "mp4" && _turboMode && canMP4);
+          const _useWebM_cas = !(_exportFmt === "mp4" && _turboMode && canMP4);
           if (!_useWebM_cas) {
             toast$("⚡ تصدير MP4 بصوت مخصص...");
             setSbar("🔴 يصدّر " + timings.length + " آية...", "#f47c7c");
@@ -7914,15 +7913,12 @@
         if (window._bgSlideTimer) { clearInterval(window._bgSlideTimer); window._bgSlideTimer = null; }
 
         // اختيار المسار
-        /* canMP4: نتحقق من Mp4Muxer (CDN) أو _mp4MuxerLoaded (loaded async) */
+        /* canMP4: يكفي VideoEncoder + Mp4Muxer — AudioEncoder اختياري (iOS 15.4+) */
         const canMP4 =
           typeof VideoEncoder !== "undefined" &&
-          typeof AudioEncoder !== "undefined" &&
           typeof Mp4Muxer !== "undefined";
 
-        // على iOS: نجبر WebM path (MediaRecorder) لأنه يدعم MP4 مباشرةً هناك
-        // WebCodecs على iOS 17 مش مكتمل بما يكفي للـ muxer
-        const _useWebM = _isIOS || !(_exportFmt === "mp4" && _turboMode && canMP4);
+        const _useWebM = !(_exportFmt === "mp4" && _turboMode && canMP4);
 
         if (!_useWebM) {
           toast$("⚡ تصدير MP4...");
@@ -7964,10 +7960,12 @@
           }, 90000);
         });
 
+        /* iOS 15.4+: VideoEncoder متاح لكن AudioEncoder غير متاح — نصدّر فيديو بدون صوت */
+        const _hasAudioEnc = typeof AudioEncoder !== "undefined";
         const muxer = new Mp4Muxer.Muxer({
           target: new Mp4Muxer.ArrayBufferTarget(),
           video: { codec: "avc", width: W, height: H, frameRate: FPS },
-          audio: { codec: "aac", sampleRate: SR, numberOfChannels: 2 },
+          ...(_hasAudioEnc ? { audio: { codec: "aac", sampleRate: SR, numberOfChannels: 2 } } : {}),
           fastStart: "in-memory",
         });
 
@@ -8022,17 +8020,19 @@
           );
         }
 
-        // AudioEncoder
-        const audioEnc = new AudioEncoder({
+        // AudioEncoder — اختياري (iOS 15.x لا يدعمه)
+        const audioEnc = _hasAudioEnc ? new AudioEncoder({
           output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
           error: (e) => console.error("AEnc:", e),
-        });
-        audioEnc.configure({
+        }) : null;
+        if (audioEnc) audioEnc.configure({
           codec: "mp4a.40.2",
           sampleRate: SR,
           numberOfChannels: 2,
           bitrate: 96000,
         });
+        if (!_hasAudioEnc)
+          toast$("⚠️ iOS 15: تصدير فيديو بدون صوت (الصوت يحتاج iOS 16+)");
 
         // بناء audio arrays — SR الحقيقي من الـ buffers مع ثانيتين padding
         const actualSR = buffers[0].sampleRate;
@@ -8160,7 +8160,7 @@
             hlActive = _drawVerseFrame(vd, f, msPerFrame, hlActive);
 
             // audio chunk — per-ayah base offset + local frame offset (zero drift)
-            {
+            if (_hasAudioEnc && audioEnc) {
               const _ayahBase = audioBaseOffset[idx];
               const _ayahRLen = actualSR === SR
                 ? buf.length
@@ -8228,7 +8228,7 @@
           const extraFrames = Math.ceil(FPS * 0.5); // 0.5s tail
           for (let f = 0; f < extraFrames; f++) {
             if (_expAbort || vEncErr) break;
-            {
+            if (_hasAudioEnc && audioEnc) {
               const _tailOff  = Math.round((globalFrame / FPS) * SR);
               const _tailNext = Math.min(Math.round(((globalFrame + 1) / FPS) * SR), totalSamp);
               const aLen = Math.max(0, _tailNext - _tailOff);
@@ -8328,7 +8328,7 @@
             });
 
           await _flushWithTimeout(videoEnc, "VideoEncoder");
-          await _flushWithTimeout(audioEnc, "AudioEncoder");
+          if (_hasAudioEnc && audioEnc) await _flushWithTimeout(audioEnc, "AudioEncoder");
           muxer.finalize();
 
           const blob = new Blob([muxer.target.buffer], { type: "video/mp4" });
