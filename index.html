@@ -9475,6 +9475,8 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
             window.AudioContext || window.webkitAudioContext
           )();
           _expCtxRef = expCtx;
+          /* استئناف فوري داخل حدث المستخدم */
+          expCtx.resume().catch(() => {});
 
           // نجيب الـ ArrayBuffer من الـ File مباشرة (أموثق وأضمن من fetch blob URL)
           let fullBuf;
@@ -9773,6 +9775,8 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
 
         const expCtx = new (window.AudioContext || window.webkitAudioContext)();
         _expCtxRef = expCtx;
+        /* استئناف AudioContext فوراً داخل حدث المستخدم — iOS يرفض resume() بعد أول await */
+        expCtx.resume().catch(() => {});
 
         const loadResults = await _loadData(expCtx, exportAyahs, sn).catch(
           (e) => {
@@ -10261,12 +10265,9 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
           _setProgress(_expTotalDur, true);
           _finishExport(expCtx, "✅ تم حفظ MP4 — " + mb + " MB ✨", "#5ec285");
         } catch (e) {
-          console.error("finalize:", e);
-          toast$("⚠ فشل التجميع — تصدير WebM...");
-          _expElapsedBefore = 0;
-          isExporting = false;
-          startDrawLoop();
-          await _exportWebM(expCtx, qp, buffers, verseData, exportAyahs, total);
+          console.error("_exportMP4 finalize error:", e);
+          _finishExport(expCtx, "❌ فشل تصدير MP4: " + e.message, "#f47c7c");
+          toast$("❌ فشل تصدير MP4 — " + e.message);
         }
       }
 
@@ -10373,37 +10374,24 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         }
 
         // الخطوة 2: replay الـ frames مع الصوت
-        /* ── iOS bypass: MediaRecorder + captureStream غير موثوق على iOS ──
-           المشاكل المعروفة:
-           1. AudioContext يبقى suspended بعد سلسلة async (iOS لا يسمح resume)
-           2. setTimeout يتأخر عندما تطفئ الشاشة → loop يتجمّد
-           3. MediaRecorder.onstop قد لا يُطلق بشكل موثوق على بعض إصدارات iOS
-           الحل: على iOS نصدّر ZIP مباشرةً من الـ frames المجمَّعة في الخطوة 1 ── */
-        if (_isIOS) {
-          const _iosVer = (() => {
-            const m = navigator.userAgent.match(/OS (\d+)_/);
-            return m ? parseInt(m[1]) : 0;
-          })();
-          toast$("📦 iOS " + (_iosVer || "") + " — تصدير الصور مباشرةً...");
-          xShow(total, total, "جارٍ تجميع ZIP...");
-          setSbar("📦 جارٍ تصدير ZIP...", "#c9973a");
-          const zipFiles = frameBlobs.map((b, i) => ({
-            name: `frame_${String(i).padStart(5, "0")}.jpg`,
-            blob: b,
-          }));
-          const zipBlob = await window.SimpleZip.build(zipFiles);
-          const mb = (zipBlob.size / 1024 / 1024).toFixed(1);
-          _downloadBlob(
-            zipBlob,
-            "Islam-Reels-frames-" + (S.surah?.ar || "قرآن") + ".zip",
-          );
-          _setProgress(_expTotalDur, true);
-          _finishExport(
-            expCtx,
-            "✅ تم تصدير " + frameBlobs.length + " صورة — " + mb + " MB",
-            "#c9973a",
-          );
+        /* ── iOS 14 وما دون: captureStream غير متاح — نصدّر ZIP ──
+           iOS 15.4+: captureStream + MediaRecorder يعملان — نكمل عادي ── */
+        const _iosVer = _isIOS
+          ? (() => {
+              const m = navigator.userAgent.match(/OS (\d+)_/);
+              return m ? parseInt(m[1]) : 0;
+            })()
+          : 99;
+
+        if (_isIOS && _iosVer < 15) {
+          toast$("❌ iOS " + _iosVer + " لا يدعم تصدير MP4 — يرجى تحديث iOS إلى 15.4 أو أعلى");
+          _finishExport(expCtx, "❌ iOS " + _iosVer + " غير مدعوم — حدّث لـ iOS 15.4+", "#f47c7c");
           return;
+        }
+
+        /* تأكيد استئناف AudioContext قبل captureStream */
+        if (expCtx.state === "suspended") {
+          await expCtx.resume().catch(() => {});
         }
 
         xShow(total, total, "جارٍ تسجيل الفيديو...");
@@ -10476,33 +10464,12 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         const _canWebM = _canRec; // نستخدم نفس الـ flag بس بمعنى أشمل
 
         if (!_canRec) {
-          /* iOS القديم (< 15) لا يدعم MediaRecorder — نصدّر ZIP بصور */
-          const _iosVer = (() => {
-            const m = navigator.userAgent.match(/OS (\d+)_/);
-            return m ? parseInt(m[1]) : 0;
-          })();
-          const _zipMsg = _isIOS
-            ? "📦 جهازك (iOS " + (_iosVer || "قديم") + ") لا يدعم تسجيل الفيديو — تم تصدير الصور"
-            : "📦 MediaRecorder غير متاح — تصدير ZIP frames...";
-          toast$(_zipMsg);
-          xShow(total, total, "جارٍ تجميع ZIP...");
-          setSbar("📦 جارٍ تصدير ZIP...", "#c9973a");
-          const zipFiles = frameBlobs.map((b, i) => ({
-            name: `frame_${String(i).padStart(5, "0")}.jpg`,
-            blob: b,
-          }));
-          const zipBlob = await window.SimpleZip.build(zipFiles);
-          const mb = (zipBlob.size / 1024 / 1024).toFixed(1);
-          _downloadBlob(
-            zipBlob,
-            "Islam-Reels-frames-" + (S.surah?.ar || "قرآن") + ".zip",
-          );
-          _setProgress(_expTotalDur, true);
-          _finishExport(
-            expCtx,
-            "✅ تم تصدير ZIP — " + mb + " MB (افتح بتطبيق دمج فيديو)",
-            "#c9973a",
-          );
+          /* captureStream أو MediaRecorder غير متاح */
+          const _errMsg = _isIOS
+            ? "❌ iOS " + (_iosVer || "") + " — يرجى تحديث iOS إلى 15.4+ لتصدير MP4"
+            : "❌ المتصفح لا يدعم تسجيل الفيديو — جرّب Chrome أو Safari";
+          toast$(_errMsg);
+          _finishExport(expCtx, _errMsg, "#f47c7c");
           return;
         }
 
@@ -10554,130 +10521,61 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
             return;
           }
 
-          // WebM — على iOS نعرض popup مع زرار تحويل اختياري، على غيره نحفظ مباشرةً
+          // MediaRecorder أنتج WebM — نحوّله إلى MP4 عبر FFmpeg
           const webmBlob = recBlob;
+          xShow(total, total, "⚙️ جارٍ تحويل إلى MP4...");
+          setSbar("⚙️ يحمّل FFmpeg...", "#c9973a");
+          toast$("⚙️ جارٍ التحويل لـ MP4 — قد يأخذ دقيقة...");
 
-          if (_isIOS) {
-            // iOS: عرض popup مباشرة — المستخدم يختار التحويل لو أراد
-            showVideoPopup(
-              webmBlob,
-              "Islam-Reels-" + (S.surah?.ar || "قرآن") + ".webm",
-            );
-            _setProgress(_expTotalDur, true);
-            _finishExport(expCtx, "✅ الفيديو جاهز — اضغط 🔄 للتحويل لـ MP4", "#5ec285");
-            return;
-          }
-
-          if (false && _isIOS) { /* disabled FFmpeg path */
-            xShow(total, total, "⚙️ جارٍ تحويل WebM → MP4...");
-            setSbar("⚙️ يحمّل FFmpeg...", "#c9973a");
-            toast$("⚙️ جارٍ التحويل — قد يأخذ دقيقة...");
-
-            const logLines = [];
-            try {
-              const ffLoaded = await _loadFFmpeg((msg) => logLines.push(msg));
-              if (!ffLoaded || !window._ffmpegInst) {
-                throw new Error("FFmpeg failed to load — check console");
-              }
-
-              const ff = window._ffmpegInst;
-
-              ff.on("progress", ({ progress }) => {
-                if (progress >= 0 && progress <= 1) {
-                  const pct = Math.round(progress * 100);
-                  setSbar(`⚙️ تحويل ${pct}%...`, "#c9973a");
-                  xShow(total, total, `⚙️ تحويل ${pct}%...`);
-                }
-              });
-
-              setSbar("⚙️ جارٍ كتابة الملف...", "#c9973a");
-              const inData = new Uint8Array(await webmBlob.arrayBuffer());
-              await ff.writeFile("input.webm", inData);
-
-              setSbar("⚙️ يشغّل FFmpeg...", "#c9973a");
-
-              const ret = await ff.exec([
-                "-i",
-                "input.webm",
-                "-c:v",
-                "libx264",
-                "-profile:v",
-                "baseline",
-                "-level",
-                "3.0",
-                "-pix_fmt",
-                "yuv420p",
-                "-c:a",
-                "aac",
-                "-b:a",
-                "128k",
-                "-movflags",
-                "+faststart",
-                "-preset",
-                "ultrafast",
-                "-y",
-                "output.mp4",
-              ]);
-
-              if (ret !== 0) {
-                console.error(
-                  "FFmpeg exit code:",
-                  ret,
-                  "\nLog:\n",
-                  logLines.join("\n"),
-                );
-                throw new Error(`FFmpeg exit ${ret}`);
-              }
-
-              const outData = await ff.readFile("output.mp4");
-              if (!outData || outData.byteLength < 1000) {
-                throw new Error("MP4 output empty or corrupt");
-              }
-              const mp4Blob = new Blob([outData.buffer], { type: "video/mp4" });
-
-              await ff.deleteFile("input.webm").catch(() => {});
-              await ff.deleteFile("output.mp4").catch(() => {});
-
-              const mp4mb = (mp4Blob.size / 1024 / 1024).toFixed(1);
-              showVideoPopup(
-                mp4Blob,
-                "Islam-Reels-" + (S.surah?.ar || "قرآن") + ".mp4",
-              );
-              _setProgress(_expTotalDur, true);
-              _finishExport(
-                expCtx,
-                "✅ تم التحويل MP4 — " + mp4mb + " MB ✨",
-                "#5ec285",
-              );
-              return;
-            } catch (e) {
-              console.error(
-                "FFmpeg conversion failed:",
-                e,
-                "\nLog:\n",
-                logLines.join("\n"),
-              );
-              showVideoPopup(
-                webmBlob,
-                "Islam-Reels-" + (S.surah?.ar || "قرآن") + ".webm",
-              );
-              _setProgress(_expTotalDur, true);
-              _finishExport(
-                expCtx,
-                "⚠️ WebM جاهز — اضغط 🔄 للتحويل يدوياً",
-                "#c9973a",
-              );
-              return;
+          const _ffLogLines = [];
+          try {
+            const ffLoaded = await _loadFFmpeg((msg) => _ffLogLines.push(msg));
+            if (!ffLoaded || !window._ffmpegInst) {
+              throw new Error("FFmpeg failed to load");
             }
-          }
 
-          // غير iOS: حفظ WebM مباشرةً
-          _downloadBlob(
-            webmBlob,
-            "Islam-Reels-" + (S.surah?.ar || "قرآن") + ".webm",
-          );
-          _setProgress(_expTotalDur, true);
-          _finishExport(expCtx, "✅ تم الحفظ WebM — " + mb + " MB", "#5ec285");
+            const ff = window._ffmpegInst;
+            ff.on("progress", ({ progress }) => {
+              if (progress >= 0 && progress <= 1) {
+                const pct = Math.round(progress * 100);
+                setSbar(`⚙️ تحويل ${pct}%...`, "#c9973a");
+                xShow(total, total, `⚙️ تحويل ${pct}%...`);
+              }
+            });
+
+            const inData = new Uint8Array(await webmBlob.arrayBuffer());
+            await ff.writeFile("input.webm", inData);
+
+            const ret = await ff.exec([
+              "-i", "input.webm",
+              "-c:v", "libx264", "-profile:v", "baseline", "-level", "3.0",
+              "-pix_fmt", "yuv420p",
+              "-c:a", "aac", "-b:a", "128k",
+              "-movflags", "+faststart",
+              "-preset", "ultrafast",
+              "-y", "output.mp4",
+            ]);
+
+            if (ret !== 0) throw new Error(`FFmpeg exit ${ret}`);
+
+            const outData = await ff.readFile("output.mp4");
+            if (!outData || outData.byteLength < 1000) throw new Error("MP4 output empty");
+            const mp4Blob = new Blob([outData.buffer], { type: "video/mp4" });
+
+            await ff.deleteFile("input.webm").catch(() => {});
+            await ff.deleteFile("output.mp4").catch(() => {});
+
+            const mp4mb = (mp4Blob.size / 1024 / 1024).toFixed(1);
+            showVideoPopup(mp4Blob, "Islam-Reels-" + (S.surah?.ar || "قرآن") + ".mp4");
+            _setProgress(_expTotalDur, true);
+            _finishExport(expCtx, "✅ تم التحويل MP4 — " + mp4mb + " MB ✨", "#5ec285");
+          } catch (e) {
+            console.error("FFmpeg conversion failed:", e, "\nLog:\n", _ffLogLines.join("\n"));
+            // fallback: اعرض الفيديو كـ WebM في popup بدلاً من ZIP
+            showVideoPopup(webmBlob, "Islam-Reels-" + (S.surah?.ar || "قرآن") + ".webm");
+            _setProgress(_expTotalDur, true);
+            _finishExport(expCtx, "⚠️ تعذّر تحويل MP4 — الفيديو جاهز بصيغة WebM", "#c9973a");
+          }
         };
         exportRecorder.start(100);
 
