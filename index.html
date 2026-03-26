@@ -8431,8 +8431,15 @@
         }
         // الـ TAIL samples تبقى 0 (صمت) تلقائياً
 
-        // captureStream(0) + requestFrame
-        const videoStream = canvas.captureStream(0);
+        // captureStream — iOS Safari لا تدعم requestFrame() إطلاقاً
+        // نكشف ذلك مسبقاً ونستخدم captureStream(FPS) بدلاً من (0)
+        const _supportsReqFrame = (() => {
+          try {
+            const _t = document.createElement("canvas").captureStream(0).getVideoTracks()[0];
+            return typeof _t?.requestFrame === "function";
+          } catch (e) { return false; }
+        })();
+        const videoStream = canvas.captureStream(_supportsReqFrame ? 0 : FPS);
         const videoTrack = videoStream.getVideoTracks()[0];
         const expDest = expCtx.createMediaStreamDestination();
         const combined = new MediaStream([
