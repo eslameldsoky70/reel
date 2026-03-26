@@ -8317,6 +8317,7 @@
         const FPS = qp.fps,
           msPerFrame = 1000 / FPS;
         const frameBlobs = [];
+        let globalFrame = 0; // عداد الـ frames الكلي لـ _expGlobalFrame
 
         // preload كل صور الخلفية قبل لوب التصدير
         if (_bgImages && _bgImages.length > 1) await _bgPreloadAll();
@@ -8385,6 +8386,7 @@
               canvas.toBlob(res, "image/jpeg", 0.88),
             );
             frameBlobs.push(blob);
+            globalFrame++;
             _setProgress(_expElapsedBefore + f / FPS);
             if (f % 8 === 0) await new Promise((r) => setTimeout(r, 0));
           }
@@ -8439,13 +8441,24 @@
             return typeof _t?.requestFrame === "function";
           } catch (e) { return false; }
         })();
-        const videoStream = canvas.captureStream(_supportsReqFrame ? 0 : FPS);
-        const videoTrack = videoStream.getVideoTracks()[0];
+        /* captureStream قد يرمي exception على iOS القديم أو بيئات محدودة */
+        let videoStream, videoTrack;
+        try {
+          videoStream = canvas.captureStream(_supportsReqFrame ? 0 : FPS);
+          videoTrack = videoStream?.getVideoTracks()[0] ?? null;
+        } catch (csErr) {
+          console.warn("captureStream failed:", csErr);
+          videoStream = null;
+          videoTrack = null;
+        }
         const expDest = expCtx.createMediaStreamDestination();
-        const combined = new MediaStream([
-          ...videoStream.getVideoTracks(),
-          ...expDest.stream.getAudioTracks(),
-        ]);
+        /* لو captureStream فشل — نرجع لـ ZIP مباشرةً */
+        const combined = videoStream
+          ? new MediaStream([
+              ...videoStream.getVideoTracks(),
+              ...expDest.stream.getAudioTracks(),
+            ])
+          : null;
 
         /* ── ZIP fallback لو MediaRecorder مش متاح تماماً ── */
         const _allCandidates = [
@@ -8457,12 +8470,20 @@
           "video/webm;codecs=vp8,opus",
           "video/webm",
         ];
-        const _canRec = typeof MediaRecorder !== "undefined" &&
+        const _canRec = !!combined && typeof MediaRecorder !== "undefined" &&
           _allCandidates.some(m => { try { return MediaRecorder.isTypeSupported(m); } catch { return false; } });
         const _canWebM = _canRec; // نستخدم نفس الـ flag بس بمعنى أشمل
 
         if (!_canRec) {
-          toast$("📦 MediaRecorder غير متاح — تصدير ZIP frames...");
+          /* iOS القديم (< 15) لا يدعم MediaRecorder — نصدّر ZIP بصور */
+          const _iosVer = (() => {
+            const m = navigator.userAgent.match(/OS (\d+)_/);
+            return m ? parseInt(m[1]) : 0;
+          })();
+          const _zipMsg = _isIOS
+            ? "📦 جهازك (iOS " + (_iosVer || "قديم") + ") لا يدعم تسجيل الفيديو — تم تصدير الصور"
+            : "📦 MediaRecorder غير متاح — تصدير ZIP frames...";
+          toast$(_zipMsg);
           xShow(total, total, "جارٍ تجميع ZIP...");
           setSbar("📦 جارٍ تصدير ZIP...", "#c9973a");
           const zipFiles = frameBlobs.map((b, i) => ({
@@ -8659,19 +8680,48 @@
         };
         exportRecorder.start(100);
 
+        /* iOS: نعطي المتصفح وقت صغير يبدأ يلتقط الـ stream قبل ما نشغّل الصوت */
+        if (_isIOS) await new Promise((r) => setTimeout(r, 200));
+
         const audioSrc = expCtx.createBufferSource();
         audioSrc.buffer = audioBuf;
         audioSrc.connect(expDest);
 
+        /* resume مرتين — iOS أحياناً يحتاج استدعاء ثاني بعد ما يبدأ التسجيل */
         if (expCtx.state === "suspended") await expCtx.resume().catch(() => {});
+        if (_isIOS && expCtx.state === "suspended")
+          await new Promise((r) => setTimeout(r, 100)).then(() => expCtx.resume().catch(() => {}));
         audioSrc.start(0);
+
+        /* ── iOS-safe frame draw: createImageBitmap غير مدعوم في iOS < 15
+           نستخدم Image() + ObjectURL كـ fallback شامل ── */
+        const _supportsImageBitmap = typeof createImageBitmap === "function";
+        async function _drawFrameBlob(blob) {
+          if (_supportsImageBitmap) {
+            try {
+              const bmp = await createImageBitmap(blob);
+              ctx.drawImage(bmp, 0, 0);
+              bmp.close();
+              return;
+            } catch (e) { /* fall through to Image() path */ }
+          }
+          await new Promise((res, rej) => {
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+            img.onload = () => {
+              ctx.drawImage(img, 0, 0);
+              URL.revokeObjectURL(url);
+              res();
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("img load failed")); };
+            img.src = url;
+          });
+        }
 
         const t0 = performance.now();
         for (let f = 0; f < frameBlobs.length; f++) {
           if (_expAbort) break;
-          const img = await createImageBitmap(frameBlobs[f]);
-          ctx.drawImage(img, 0, 0);
-          img.close();
+          await _drawFrameBlob(frameBlobs[f]);
           if (videoTrack?.requestFrame) videoTrack.requestFrame();
           const wait = (f + 1) * msPerFrame - (performance.now() - t0);
           if (wait > 0) await new Promise((r) => setTimeout(r, wait));
