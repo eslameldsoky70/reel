@@ -8438,12 +8438,10 @@
             window._expGlobalFrame = globalFrame;
             window._expFPS = FPS;
             hlActive = _drawVerseFrame(vd, f, msPerFrame, hlActive);
-            /* toBlob مع timeout 8 ثوان — لو اتعلق نحط null */
-            const blob = await Promise.race([
-              new Promise((res) => canvas.toBlob(res, "image/jpeg", 0.88)),
-              new Promise((res) => setTimeout(() => res(null), 8000)),
-            ]);
-            if (blob) frameBlobs.push(blob);
+            const blob = await new Promise((res) =>
+              canvas.toBlob(res, "image/jpeg", 0.88),
+            );
+            frameBlobs.push(blob);
             globalFrame++;
             _setProgress(_expElapsedBefore + f / FPS);
             if (f % 8 === 0) await new Promise((r) => setTimeout(r, 0));
@@ -8463,6 +8461,39 @@
         }
 
         // الخطوة 2: replay الـ frames مع الصوت
+        /* ── iOS bypass: MediaRecorder + captureStream غير موثوق على iOS ──
+           المشاكل المعروفة:
+           1. AudioContext يبقى suspended بعد سلسلة async (iOS لا يسمح resume)
+           2. setTimeout يتأخر عندما تطفئ الشاشة → loop يتجمّد
+           3. MediaRecorder.onstop قد لا يُطلق بشكل موثوق على بعض إصدارات iOS
+           الحل: على iOS نصدّر ZIP مباشرةً من الـ frames المجمَّعة في الخطوة 1 ── */
+        if (_isIOS) {
+          const _iosVer = (() => {
+            const m = navigator.userAgent.match(/OS (\d+)_/);
+            return m ? parseInt(m[1]) : 0;
+          })();
+          toast$("📦 iOS " + (_iosVer || "") + " — تصدير الصور مباشرةً...");
+          xShow(total, total, "جارٍ تجميع ZIP...");
+          setSbar("📦 جارٍ تصدير ZIP...", "#c9973a");
+          const zipFiles = frameBlobs.map((b, i) => ({
+            name: `frame_${String(i).padStart(5, "0")}.jpg`,
+            blob: b,
+          }));
+          const zipBlob = await window.SimpleZip.build(zipFiles);
+          const mb = (zipBlob.size / 1024 / 1024).toFixed(1);
+          _downloadBlob(
+            zipBlob,
+            "Islam-Reels-frames-" + (S.surah?.ar || "قرآن") + ".zip",
+          );
+          _setProgress(_expTotalDur, true);
+          _finishExport(
+            expCtx,
+            "✅ تم تصدير " + frameBlobs.length + " صورة — " + mb + " MB",
+            "#c9973a",
+          );
+          return;
+        }
+
         xShow(total, total, "جارٍ تسجيل الفيديو...");
         setSbar("⏳ جارٍ تسجيل...", "#c9973a");
 
@@ -8738,14 +8769,6 @@
         };
         exportRecorder.start(100);
 
-        /* انتظر يتأكد إن التسجيل فعلاً بدأ — مع timeout 3 ثوان */
-        await new Promise((res) => {
-          const _chk = setInterval(() => {
-            if (exportRecorder.state === "recording") { clearInterval(_chk); res(); }
-          }, 50);
-          setTimeout(() => { clearInterval(_chk); res(); }, 3000);
-        });
-
         /* iOS: نعطي المتصفح وقت صغير يبدأ يلتقط الـ stream قبل ما نشغّل الصوت */
         if (_isIOS) await new Promise((r) => setTimeout(r, 200));
 
@@ -8785,39 +8808,15 @@
         }
 
         const t0 = performance.now();
-        const _totalFrames = frameBlobs.length;
-        const _replayMaxMs = (_expTotalDur + 30) * 1000; // مدة الفيديو + 30 ثانية هامش
-        const _replayWatchdog = setTimeout(() => {
-          console.warn("Replay loop watchdog — forcing recorder stop");
-          try { if (exportRecorder?.state !== "inactive") exportRecorder.stop(); } catch(e){}
-        }, _replayMaxMs);
-
-        for (let f = 0; f < _totalFrames; f++) {
+        for (let f = 0; f < frameBlobs.length; f++) {
           if (_expAbort) break;
-
-          /* رسم الـ frame مع timeout 5 ثوان لو اتعلق */
-          await Promise.race([
-            _drawFrameBlob(frameBlobs[f]),
-            new Promise((_, rej) => setTimeout(() => rej(new Error("frame_timeout")), 5000)),
-          ]).catch((e) => {
-            console.warn("frame", f, "draw error:", e.message);
-            /* نكمل — ما نوقفش التسجيل بسبب frame واحد */
-          });
-
-          /* حرّر الـ blob فوراً لتوفير الذاكرة */
-          frameBlobs[f] = null;
-
+          await _drawFrameBlob(frameBlobs[f]);
           if (videoTrack?.requestFrame) videoTrack.requestFrame();
           const wait = (f + 1) * msPerFrame - (performance.now() - t0);
           if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-
-          if (f % 10 === 0) {
-            const pct = Math.round((f / _totalFrames) * 100);
-            xShow(total, total, "تسجيل الفيديو... " + pct + "%");
-            _setProgress((_expTotalDur * f) / _totalFrames);
-          }
+          if (f % 20 === 0)
+            _setProgress((_expTotalDur * f) / frameBlobs.length);
         }
-        clearTimeout(_replayWatchdog);
 
         await new Promise((r) => setTimeout(r, 500));
         if (exportRecorder?.state !== "inactive") {
