@@ -6934,10 +6934,10 @@
         }
       }
 
-      function _setProgress(elapsed) {
+      function _setProgress(elapsed, forceMax) {
         if (!_expTotalDur) return;
-        const pct = Math.min(99, Math.round((elapsed / _expTotalDur) * 100));
-        const rem = Math.max(0, _expTotalDur - elapsed);
+        const pct = forceMax ? 100 : Math.min(99, Math.round((elapsed / _expTotalDur) * 100));
+        const rem = forceMax ? 0 : Math.max(0, _expTotalDur - elapsed);
         const m = Math.floor(rem / 60),
           s = Math.floor(rem % 60);
         const circ = 2 * Math.PI * 45;
@@ -8262,17 +8262,36 @@
         setSbar("⏳ جارٍ تجميع MP4...", "#c9973a");
 
         try {
-          // ← Queue Drain Guard محسّن: ننتظر مع timeout بحد أقصى 8 ثوانٍ
+          // ← Queue Drain Guard: ننتظر مع timeout بحد أقصى 10 ثوانٍ
           const drainStart = Date.now();
           while (videoEnc.encodeQueueSize > 0) {
-            if (Date.now() - drainStart > 8000) {
+            if (Date.now() - drainStart > 10000) {
               console.warn("Queue drain timeout — proceeding with flush");
               break;
             }
             await new Promise((r) => setTimeout(r, 8));
           }
-          await videoEnc.flush();
-          await audioEnc.flush();
+
+          xShow(total, total, "⏳ جارٍ إنهاء الفيديو...");
+          setSbar("⏳ جارٍ إنهاء...", "#c9973a");
+
+          /* flush مع timeout — بعض الأجهزة flush بتتعلق إلى ما لا نهاية */
+          const _flushWithTimeout = (enc, label, ms = 12000) =>
+            Promise.race([
+              enc.flush(),
+              new Promise((_, rej) =>
+                setTimeout(() => {
+                  console.warn(label + " flush timeout after " + ms + "ms — forcing finalize");
+                  rej(new Error(label + "_flush_timeout"));
+                }, ms)
+              ),
+            ]).catch((e) => {
+              /* timeout أو خطأ — نكمل على أي حال */
+              console.warn(label + " flush error (ignored):", e.message);
+            });
+
+          await _flushWithTimeout(videoEnc, "VideoEncoder");
+          await _flushWithTimeout(audioEnc, "AudioEncoder");
           muxer.finalize();
 
           const blob = new Blob([muxer.target.buffer], { type: "video/mp4" });
@@ -8290,7 +8309,7 @@
               "Islam-Reels-" + (S.surah?.ar || "قرآن") + ".mp4",
             );
           }
-          _setProgress(_expTotalDur);
+          _setProgress(_expTotalDur, true);
           _finishExport(expCtx, "✅ تم حفظ MP4 — " + mb + " MB ✨", "#5ec285");
         } catch (e) {
           console.error("finalize:", e);
@@ -8496,7 +8515,7 @@
             zipBlob,
             "Islam-Reels-frames-" + (S.surah?.ar || "قرآن") + ".zip",
           );
-          _setProgress(_expTotalDur);
+          _setProgress(_expTotalDur, true);
           _finishExport(
             expCtx,
             "✅ تم تصدير ZIP — " + mb + " MB (افتح بتطبيق دمج فيديو)",
@@ -8544,7 +8563,7 @@
               recBlob,
               "Islam-Reels-" + (S.surah?.ar || "قرآن") + ".mp4",
             );
-            _setProgress(_expTotalDur);
+            _setProgress(_expTotalDur, true);
             _finishExport(
               expCtx,
               "✅ تم الحفظ MP4 — " + mb + " MB ✨",
@@ -8562,7 +8581,7 @@
               webmBlob,
               "Islam-Reels-" + (S.surah?.ar || "قرآن") + ".webm",
             );
-            _setProgress(_expTotalDur);
+            _setProgress(_expTotalDur, true);
             _finishExport(expCtx, "✅ الفيديو جاهز — اضغط 🔄 للتحويل لـ MP4", "#5ec285");
             return;
           }
@@ -8642,7 +8661,7 @@
                 mp4Blob,
                 "Islam-Reels-" + (S.surah?.ar || "قرآن") + ".mp4",
               );
-              _setProgress(_expTotalDur);
+              _setProgress(_expTotalDur, true);
               _finishExport(
                 expCtx,
                 "✅ تم التحويل MP4 — " + mp4mb + " MB ✨",
@@ -8660,7 +8679,7 @@
                 webmBlob,
                 "Islam-Reels-" + (S.surah?.ar || "قرآن") + ".webm",
               );
-              _setProgress(_expTotalDur);
+              _setProgress(_expTotalDur, true);
               _finishExport(
                 expCtx,
                 "⚠️ WebM جاهز — اضغط 🔄 للتحويل يدوياً",
@@ -8675,7 +8694,7 @@
             webmBlob,
             "Islam-Reels-" + (S.surah?.ar || "قرآن") + ".webm",
           );
-          _setProgress(_expTotalDur);
+          _setProgress(_expTotalDur, true);
           _finishExport(expCtx, "✅ تم الحفظ WebM — " + mb + " MB", "#5ec285");
         };
         exportRecorder.start(100);
@@ -8729,8 +8748,23 @@
             _setProgress((_expTotalDur * f) / frameBlobs.length);
         }
 
-        await new Promise((r) => setTimeout(r, 800));
-        if (exportRecorder?.state !== "inactive") exportRecorder.stop();
+        await new Promise((r) => setTimeout(r, 500));
+        if (exportRecorder?.state !== "inactive") {
+          /* ننتظر onstop يتنفّذ فعلاً — مع timeout 15 ثانية كـ safety net */
+          await new Promise((resolve) => {
+            const _stopTimeout = setTimeout(() => {
+              console.warn("recorder onstop timeout — forcing resolve");
+              resolve();
+            }, 15000);
+            const _origStop = exportRecorder.onstop;
+            exportRecorder.onstop = async (e) => {
+              clearTimeout(_stopTimeout);
+              if (_origStop) await _origStop(e);
+              resolve();
+            };
+            try { exportRecorder.stop(); } catch (e) { clearTimeout(_stopTimeout); resolve(); }
+          });
+        }
       }
 
       /* ══ Modal — xShow بيُحدَّث من الـ interval مش هنا ══ */
