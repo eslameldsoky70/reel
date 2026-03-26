@@ -7953,6 +7953,17 @@
           SR = 44100;
         const frameDurUs = Math.round(1e6 / FPS);
 
+        /* ── Watchdog: لو التصدير تعلّق أكتر من 90 ثانية نوقفه ونجرب WebM ── */
+        let _watchdogTimer = null;
+        let _watchdogFired = false;
+        const _watchdogPromise = new Promise((resolve) => {
+          _watchdogTimer = setTimeout(() => {
+            _watchdogFired = true;
+            console.warn("_exportMP4 watchdog fired — forcing WebM fallback");
+            resolve();
+          }, 90000);
+        });
+
         const muxer = new Mp4Muxer.Muxer({
           target: new Mp4Muxer.ArrayBufferTarget(),
           video: { codec: "avc", width: W, height: H, frameRate: FPS },
@@ -8175,20 +8186,29 @@
               }
             }
 
-            // video frame
-            const ts = globalFrame * frameDurUs;
-            const vf = new VideoFrame(canvas, {
-              timestamp: ts,
-              duration: frameDurUs,
-            });
-            videoEnc.encode(vf, { keyFrame: globalFrame % (FPS * 2) === 0 });
-            vf.close();
+            // video frame — try/catch لأن VideoFrame(canvas) قد يرمي على بعض الأجهزة
+            try {
+              const ts = globalFrame * frameDurUs;
+              const vf = new VideoFrame(canvas, {
+                timestamp: ts,
+                duration: frameDurUs,
+              });
+              videoEnc.encode(vf, { keyFrame: globalFrame % (FPS * 2) === 0 });
+              vf.close();
+            } catch (vfErr) {
+              console.warn("VideoFrame error (frame " + globalFrame + "):", vfErr);
+              // نستمر — ما نوقفش التصدير كله بسبب frame واحد
+            }
             globalFrame++;
 
             _setProgress(_expElapsedBefore + f / FPS);
 
-            while (videoEnc.encodeQueueSize > 20) {
-              await new Promise((r) => setTimeout(r, 1));
+            // back-pressure guard مع timeout — لو القائمة فضلت ممتلية 3 ثواني نكمل على أي حال
+            if (videoEnc.encodeQueueSize > 20) {
+              const _bpStart = Date.now();
+              while (videoEnc.encodeQueueSize > 20 && Date.now() - _bpStart < 3000) {
+                await new Promise((r) => setTimeout(r, 4));
+              }
             }
             if (f % 30 === 0) await new Promise((r) => setTimeout(r, 0));
           }
@@ -8226,16 +8246,24 @@
                 ad.close();
               }
             }
-            const ts = globalFrame * frameDurUs;
-            const vf = new VideoFrame(canvas, {
-              timestamp: ts,
-              duration: frameDurUs,
-            });
-            videoEnc.encode(vf, { keyFrame: false });
-            vf.close();
+            try {
+              const ts = globalFrame * frameDurUs;
+              const vf = new VideoFrame(canvas, {
+                timestamp: ts,
+                duration: frameDurUs,
+              });
+              videoEnc.encode(vf, { keyFrame: false });
+              vf.close();
+            } catch (vfErr) {
+              console.warn("Tail VideoFrame error:", vfErr);
+            }
             globalFrame++;
-            while (videoEnc.encodeQueueSize > 20)
-              await new Promise((r) => setTimeout(r, 1));
+            if (videoEnc.encodeQueueSize > 20) {
+              const _bpStart = Date.now();
+              while (videoEnc.encodeQueueSize > 20 && Date.now() - _bpStart < 3000) {
+                await new Promise((r) => setTimeout(r, 4));
+              }
+            }
           }
         }
 
@@ -8260,6 +8288,15 @@
 
         xShow(total, total, "جارٍ تجميع MP4...");
         setSbar("⏳ جارٍ تجميع MP4...", "#c9973a");
+
+        clearTimeout(_watchdogTimer);
+        if (_watchdogFired) {
+          toast$("⚠ تعليق في التصدير — تحويل لـ WebM...");
+          _expElapsedBefore = 0;
+          isExporting = false;
+          startDrawLoop();
+          return _exportWebM(expCtx, qp, buffers, verseData, exportAyahs, total);
+        }
 
         try {
           // ← Queue Drain Guard: ننتظر مع timeout بحد أقصى 10 ثوانٍ
