@@ -10302,33 +10302,23 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         exportAyahs,
         total,
       ) {
-        // الخطوة 1: رسم كل الـ frames وحفظها
         const FPS = qp.fps,
           msPerFrame = 1000 / FPS;
-        const frameBlobs = [];
-        let globalFrame = 0; // عداد الـ frames الكلي لـ _expGlobalFrame
+        // ── الخطوة 1: احسب تحولات الـ chunks لكل آية (بدون رسم — لتوفير الذاكرة وتجنب JPEG) ──
+        const allChunkTransitions = [];
 
         // preload كل صور الخلفية قبل لوب التصدير
         if (_bgImages && _bgImages.length > 1) await _bgPreloadAll();
 
         for (let idx = 0; idx < verseData.length; idx++) {
-          if (_expAbort) break;
-          const vd = verseData[idx],
-            buf = buffers[idx];
+          const vd = verseData[idx], buf = buffers[idx];
           _prepVerse(vd, exportAyahs);
-          markCstateDirty();
-          syncCSTATE();
-          window._expChunkAt = [];
+          const chunkTransitions = [];
           if (verseChunks.length > 1) {
-            const ft = window._masFullTimings;
             const tm = _masGetTiming(vd.ayahN);
             if (tm && tm.chunks && tm.chunks.length > 1) {
-              // ── استخدم توقيتات MAS الفعلية ──
               const ayahStart = tm.start;
-              const ayahEnd =
-                tm.end !== null && tm.end > ayahStart
-                  ? tm.end
-                  : ayahStart + buf.duration;
+              const ayahEnd = tm.end !== null && tm.end > ayahStart ? tm.end : ayahStart + buf.duration;
               const ayahDur = Math.max(0.001, ayahEnd - ayahStart);
               const totalFrames = Math.ceil(buf.duration * FPS);
               for (let ci = 1; ci < tm.chunks.length; ci++) {
@@ -10336,58 +10326,19 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
                 if (!ch || ch.start === null) continue;
                 const chRelTime = Math.max(0, ch.start - ayahStart);
                 const chRelPct = Math.min(chRelTime / ayahDur, 0.99);
-                const frame = Math.max(
-                  1,
-                  Math.min(Math.round(chRelPct * totalFrames), totalFrames - 1),
-                );
-                window._expChunkAt.push({ f: frame, ci });
+                const frame = Math.max(1, Math.min(Math.round(chRelPct * totalFrames), totalFrames - 1));
+                chunkTransitions.push({ f: frame, ci });
               }
             } else {
-              // ── مفيش توقيتات MAS — وزّع بالتساوي ──
               const numChunks = verseChunks.length;
-              const framesPerChunk = Math.floor(
-                Math.ceil(buf.duration * FPS) / numChunks,
-              );
+              const framesPerChunk = Math.floor(Math.ceil(buf.duration * FPS) / numChunks);
               for (let ci = 1; ci < numChunks; ci++)
-                window._expChunkAt.push({ f: ci * framesPerChunk, ci });
+                chunkTransitions.push({ f: ci * framesPerChunk, ci });
             }
           }
-          xShow(idx + 1, total, S.surah.ar + " — آية " + arN(vd.ayahN));
-          setSbar(
-            "🎬 رسم آية " +
-              arN(vd.ayahN) +
-              " (" +
-              (idx + 1) +
-              "/" +
-              total +
-              ")",
-            "#f47c7c",
-          );
-
-          const ayahFrames = Math.ceil(buf.duration * FPS);
-          let hlActive = -1;
-          for (let f = 0; f < ayahFrames; f++) {
-            if (_expAbort) break;
-            window._expGlobalFrame = globalFrame;
-            window._expFPS = FPS;
-            hlActive = _drawVerseFrame(vd, f, msPerFrame, hlActive);
-            const blob = await new Promise((res) =>
-              canvas.toBlob(res, "image/jpeg", 0.88),
-            );
-            frameBlobs.push(blob);
-            globalFrame++;
-            _setProgress(_expElapsedBefore + f / FPS);
-            if (f % 8 === 0) await new Promise((r) => setTimeout(r, 0));
-          }
-          if (hlActive >= 0) {
-            const o = document.getElementById("w" + hlActive);
-            if (o) {
-              o.style.color = o.dataset.base || S.color || "#fff";
-              o.style.textShadow = "";
-            }
-          }
-          _expElapsedBefore += buf.duration;
+          allChunkTransitions.push(chunkTransitions);
         }
+
         if (_expAbort) {
           _finishExport(expCtx);
           return;
@@ -10612,40 +10563,48 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
           await new Promise((r) => setTimeout(r, 100)).then(() => expCtx.resume().catch(() => {}));
         audioSrc.start(0);
 
-        /* ── iOS-safe frame draw: createImageBitmap غير مدعوم في iOS < 15
-           نستخدم Image() + ObjectURL كـ fallback شامل ── */
-        const _supportsImageBitmap = typeof createImageBitmap === "function";
-        async function _drawFrameBlob(blob) {
-          if (_supportsImageBitmap) {
-            try {
-              const bmp = await createImageBitmap(blob);
-              ctx.drawImage(bmp, 0, 0);
-              bmp.close();
-              return;
-            } catch (e) { /* fall through to Image() path */ }
-          }
-          await new Promise((res, rej) => {
-            const url = URL.createObjectURL(blob);
-            const img = new Image();
-            img.onload = () => {
-              ctx.drawImage(img, 0, 0);
-              URL.revokeObjectURL(url);
-              res();
-            };
-            img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("img load failed")); };
-            img.src = url;
-          });
-        }
-
+        // ── الخطوة 2: رسم الـ frames مباشرةً على الـ canvas بينما MediaRecorder يسجّل ──
+        // بدلاً من JPEG blobs — نتجنب ضغط الصورة وتأخر التحميل (frozen frames على iOS)
         const t0 = performance.now();
-        for (let f = 0; f < frameBlobs.length; f++) {
+        let rtGlobalFrame = 0;
+        let rtElapsedBefore = 0;
+
+        for (let idx = 0; idx < verseData.length; idx++) {
           if (_expAbort) break;
-          await _drawFrameBlob(frameBlobs[f]);
-          if (videoTrack?.requestFrame) videoTrack.requestFrame();
-          const wait = (f + 1) * msPerFrame - (performance.now() - t0);
-          if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-          if (f % 20 === 0)
-            _setProgress((_expTotalDur * f) / frameBlobs.length);
+          const vd = verseData[idx], buf = buffers[idx];
+          _prepVerse(vd, exportAyahs);
+          window._expChunkAt = allChunkTransitions[idx] || [];
+          markCstateDirty();
+          syncCSTATE();
+
+          xShow(idx + 1, total, S.surah.ar + " — آية " + arN(vd.ayahN));
+          setSbar("🔴 آية " + arN(vd.ayahN) + " (" + (idx + 1) + "/" + total + ")", "#f47c7c");
+
+          const ayahFrames = Math.ceil(buf.duration * FPS);
+          let hlActive = -1;
+
+          for (let f = 0; f < ayahFrames; f++) {
+            if (_expAbort) break;
+            window._expGlobalFrame = rtGlobalFrame;
+            window._expFPS = FPS;
+            hlActive = _drawVerseFrame(vd, f, msPerFrame, hlActive);
+            if (videoTrack?.requestFrame) videoTrack.requestFrame();
+
+            // انتظر ليتسنى لـ MediaRecorder التقاط الـ frame الجديد
+            const target = (rtGlobalFrame + 1) * msPerFrame;
+            const remaining = target - (performance.now() - t0);
+            if (remaining > 1) await new Promise((r) => setTimeout(r, remaining));
+            else await new Promise((r) => setTimeout(r, 0)); // تسليم للـ compositor دائماً
+
+            rtGlobalFrame++;
+            if (f % 10 === 0) _setProgress(rtElapsedBefore + f / FPS);
+          }
+
+          if (hlActive >= 0) {
+            const o = document.getElementById("w" + hlActive);
+            if (o) { o.style.color = o.dataset.base || S.color || "#fff"; o.style.textShadow = ""; }
+          }
+          rtElapsedBefore += buf.duration;
         }
 
         await new Promise((r) => setTimeout(r, 500));
