@@ -8115,9 +8115,10 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
             _gradCache = null;
           }
         } else {
-          // لما بنصدر — خلي bgImage زي ما هو (snapshot من _prepVerse)
-          if (!isExporting) CSTATE.bgImage = null;
+          // لا توجد صورة خلفية — دائماً امسح bgImage وارسم التدرج
+          CSTATE.bgImage = null;
           const newGrad =
+            (window.S && window.S._bgGradient) ||
             document.getElementById("screen")?.style.background ||
             "linear-gradient(160deg,#1a0533,#4a1080)";
           if (newGrad !== CSTATE.bgGradient) {
@@ -10937,6 +10938,7 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
           c1: "#1a0533",
           c2: "#4a1080",
         },
+        _bgGradient: "linear-gradient(160deg,#1a0533,#4a1080)",
       };
       window.S = S;
       const audio = document.getElementById("audio");
@@ -12075,6 +12077,7 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         if (t2 && t2 !== document.activeElement) t2.value = c2hex;
 
         // احفظ في S للتصدير
+        var grad = "linear-gradient(160deg," + c1hex + "," + c2hex + ")";
         if (window.S) {
           window.S._orn = {
             pattern: pattern,
@@ -12083,10 +12086,10 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
             c1: c1hex,
             c2: c2hex,
           };
+          window.S._bgGradient = grad;
         }
 
         // ── تحديث الـ screen background ──
-        var grad = "linear-gradient(160deg," + c1hex + "," + c2hex + ")";
         var screenEl = document.getElementById("screen");
         if (screenEl) screenEl.style.background = grad;
 
