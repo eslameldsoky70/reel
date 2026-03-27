@@ -8898,6 +8898,15 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         startDrawLoop();
         if (typeof applyOrnament === "function") applyOrnament();
         if (ctx) ctx.close().catch(() => {});
+        /* iOS: بعد التصدير كل الـ AudioContexts بتتعلق —
+           نعمل resume للـ audioCtx الخاص بالمشغّل الرئيسي والموجة الصوتية */
+        setTimeout(function() {
+          if (window.audioCtx && window.audioCtx.state === "suspended")
+            window.audioCtx.resume().catch(function(){});
+          /* الـ ctx الخاص بالموجة الصوتية في Audio Editor */
+          if (window._aeAudioCtx && window._aeAudioCtx.state === "suspended")
+            window._aeAudioCtx.resume().catch(function(){});
+        }, 300);
         if (msg) {
           toast$(msg);
           setSbar(msg, color || "#5ec285");
@@ -14600,6 +14609,7 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
             } catch (e) {
               ctx = new webkitAudioContext();
             }
+            window._aeAudioCtx = ctx; // نعرّضه للـ _finishExport
           }
           // iOS: resume لازم يكون synchronous في نفس الـ gesture
           var resumePromise = ctx.resume ? ctx.resume() : Promise.resolve();
@@ -14848,17 +14858,50 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
           playing = true;
           g("aePlayBtn").textContent = "⏸";
           src.onended = function () {
-            if (playing) {
-              playing = false;
-              offset = 0;
-              _updateUI(0);
-              var b = g("aePlayBtn");
-              if (b) b.textContent = "▶";
-            }
+            playing = false;
+            offset = 0;
+            if (raf) { cancelAnimationFrame(raf); raf = null; }
+            _updateUI(0);
+            var b = g("aePlayBtn");
+            if (b) b.textContent = "▶";
           };
+          /* RAF loop — يتوقف لو:
+             - مش شغال (playing = false)
+             - الـ context اتعلق (suspended بعد التصدير على iOS)
+             - الـ context اتغلق (closed)
+             - الوقت واقف لمدة > 2 ثانية (stale detection) */
+          var _lastTime = -1, _staleCount = 0;
           (function loop() {
             if (!playing || !ctx) return;
-            _updateUI(Math.min(ctx.currentTime - startT, dur()));
+            if (ctx.state === "suspended" || ctx.state === "closed") {
+              /* الـ context اتعلق بعد التصدير — نوقف الـ loop ونحاول resume */
+              if (ctx.state === "suspended") {
+                ctx.resume().catch(function(){});
+              }
+              /* نوقف الـ RAF مؤقتاً ونجدده بعد 500ms */
+              raf = null;
+              setTimeout(function() {
+                if (playing) {
+                  _lastTime = -1; _staleCount = 0;
+                  (function loop2() {
+                    if (!playing || !ctx || ctx.state === "closed") { _stop(); return; }
+                    if (ctx.state === "suspended") { raf = requestAnimationFrame(loop2); return; }
+                    _updateUI(Math.min(ctx.currentTime - startT, dur()));
+                    raf = requestAnimationFrame(loop2);
+                  })();
+                }
+              }, 500);
+              return;
+            }
+            /* stale detection: لو الوقت واقف 2 ثانية متتالية = الصوت انتهى بصمت */
+            var cur = ctx.currentTime - startT;
+            if (cur === _lastTime) {
+              _staleCount++;
+              if (_staleCount > 120) { _stop(); return; } /* ~2 ثانية عند 60fps */
+            } else {
+              _lastTime = cur; _staleCount = 0;
+            }
+            _updateUI(Math.min(cur, dur()));
             raf = requestAnimationFrame(loop);
           })();
         }
