@@ -10656,30 +10656,27 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         }
 
         /* ── replay loop ──
-           المشكلة: على iOS الـ draw بتاخد وقت متغير، فالـ recorder بيسجل frames قديمة
-           الحل: requestFrame فوراً بعد الرسم، ثم ننتظر الوقت المتبقي فقط ── */
+           نحسب الـ timing من t0 الكلي عشان نضمن FPS صح حتى لو frame واحد اتأخر */
         const t0 = performance.now();
         for (let f = 0; f < frameBlobs.length; f++) {
           if (_expAbort) break;
 
-          const frameStart = performance.now();
+          /* رسم الـ frame */
+          if (frameBlobs[f]) {
+            await Promise.race([
+              _drawFrameBlob(frameBlobs[f]),
+              new Promise((_, rej) => setTimeout(() => rej(new Error("frame_timeout")), 5000)),
+            ]).catch((e) => { console.warn("frame", f, "draw:", e.message); });
+            frameBlobs[f] = null;
+          }
 
-          /* رسم الـ frame — مع timeout 5 ثوان */
-          await Promise.race([
-            _drawFrameBlob(frameBlobs[f]),
-            new Promise((_, rej) => setTimeout(() => rej(new Error("frame_timeout")), 5000)),
-          ]).catch((e) => { console.warn("frame", f, "draw:", e.message); });
-
-          /* حرّر الـ blob فوراً بعد الرسم */
-          frameBlobs[f] = null;
-
-          /* أبلغ الـ recorder فوراً بعد الرسم مباشرةً */
+          /* أبلغ الـ recorder فوراً بعد الرسم */
           if (videoTrack?.requestFrame) videoTrack.requestFrame();
 
-          /* انتظر الوقت المتبقي من هذا الـ frame فقط */
-          const elapsed = performance.now() - frameStart;
-          const remaining = msPerFrame - elapsed;
-          if (remaining > 2) await new Promise((r) => setTimeout(r, remaining));
+          /* انتظر حتى موعد الـ frame التالي بناءً على t0 */
+          const nextFrameTime = t0 + (f + 1) * msPerFrame;
+          const wait = nextFrameTime - performance.now();
+          if (wait > 1) await new Promise((r) => setTimeout(r, wait));
 
           if (f % 10 === 0) {
             const pct = Math.round((f / frameBlobs.length) * 100);
@@ -14865,43 +14862,16 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
             var b = g("aePlayBtn");
             if (b) b.textContent = "▶";
           };
-          /* RAF loop — يتوقف لو:
-             - مش شغال (playing = false)
-             - الـ context اتعلق (suspended بعد التصدير على iOS)
-             - الـ context اتغلق (closed)
-             - الوقت واقف لمدة > 2 ثانية (stale detection) */
-          var _lastTime = -1, _staleCount = 0;
+          /* RAF loop — يتوقف لو playing=false أو ctx اتغلق
+             لو ctx اتعلق (suspended) — نحاول resume ونكمل */
           (function loop() {
-            if (!playing || !ctx) return;
-            if (ctx.state === "suspended" || ctx.state === "closed") {
-              /* الـ context اتعلق بعد التصدير — نوقف الـ loop ونحاول resume */
-              if (ctx.state === "suspended") {
-                ctx.resume().catch(function(){});
-              }
-              /* نوقف الـ RAF مؤقتاً ونجدده بعد 500ms */
-              raf = null;
-              setTimeout(function() {
-                if (playing) {
-                  _lastTime = -1; _staleCount = 0;
-                  (function loop2() {
-                    if (!playing || !ctx || ctx.state === "closed") { _stop(); return; }
-                    if (ctx.state === "suspended") { raf = requestAnimationFrame(loop2); return; }
-                    _updateUI(Math.min(ctx.currentTime - startT, dur()));
-                    raf = requestAnimationFrame(loop2);
-                  })();
-                }
-              }, 500);
+            if (!playing || !ctx || ctx.state === "closed") return;
+            if (ctx.state === "suspended") {
+              ctx.resume().catch(function(){});
+              raf = requestAnimationFrame(loop);
               return;
             }
-            /* stale detection: لو الوقت واقف 2 ثانية متتالية = الصوت انتهى بصمت */
-            var cur = ctx.currentTime - startT;
-            if (cur === _lastTime) {
-              _staleCount++;
-              if (_staleCount > 120) { _stop(); return; } /* ~2 ثانية عند 60fps */
-            } else {
-              _lastTime = cur; _staleCount = 0;
-            }
-            _updateUI(Math.min(cur, dur()));
+            _updateUI(Math.min(ctx.currentTime - startT, dur()));
             raf = requestAnimationFrame(loop);
           })();
         }
