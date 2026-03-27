@@ -8498,6 +8498,25 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         }
       }
 
+      // ── مساعد: يبني تدرّج الخلفية مباشرة من ألوان S._orn (بدون قراءة DOM) ──
+      function _makeBgGradient(W, H) {
+        try {
+          var _o = window.S && window.S._orn;
+          var c1 = (_o && _o.c1) || "#1a0533";
+          var c2 = (_o && _o.c2) || "#4a1080";
+          var angle = (160 * Math.PI) / 180;
+          var grd = ctx.createLinearGradient(
+            W / 2 - Math.cos(angle) * W, H / 2 - Math.sin(angle) * H,
+            W / 2 + Math.cos(angle) * W, H / 2 + Math.sin(angle) * H
+          );
+          grd.addColorStop(0, c1);
+          grd.addColorStop(1, c2);
+          return grd;
+        } catch (e) {
+          return "#0f1f15";
+        }
+      }
+
       function drawFrameDirect() {
         const W = canvas.width,
           H = canvas.height;
@@ -8516,36 +8535,27 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
           if (cachedImg && cachedImg.complete && cachedImg.naturalWidth > 0) {
             _drawBgImageToCanvas(ctx, cachedImg, W, H);
           } else {
-            // fallback: gradient
-            const fill = CSTATE.bgGradient ? parseCSSGradient(CSTATE.bgGradient, W, H) : '#070e09';
-            ctx.fillStyle = fill; ctx.fillRect(0, 0, W, H);
+            ctx.fillStyle = _makeBgGradient(W, H);
+            ctx.fillRect(0, 0, W, H);
           }
         } else if (CSTATE.bgImage) {
           try {
             const bi = CSTATE.bgImage;
-            // تأكد إن الصورة/الفيديو محمل
             const ready = bi.tagName === 'VIDEO'
               ? bi.readyState >= 2
               : (bi.complete && bi.naturalWidth > 0);
             if (ready) {
               _drawBgImageToCanvas(ctx, bi, W, H);
             } else {
-              // fallback للـ gradient لو الصورة مش جاهزة
-              const fill = CSTATE.bgGradient
-                ? parseCSSGradient(CSTATE.bgGradient, W, H)
-                : "#070e09";
-              ctx.fillStyle = fill;
+              ctx.fillStyle = _makeBgGradient(W, H);
               ctx.fillRect(0, 0, W, H);
             }
           } catch (e) {
-            ctx.fillStyle = "#070e09";
+            ctx.fillStyle = _makeBgGradient(W, H);
             ctx.fillRect(0, 0, W, H);
           }
         } else {
-          const fill = CSTATE.bgGradient
-            ? parseCSSGradient(CSTATE.bgGradient, W, H)
-            : "#070e09";
-          ctx.fillStyle = fill;
+          ctx.fillStyle = _makeBgGradient(W, H);
           ctx.fillRect(0, 0, W, H);
         }
         if (CSTATE.bgDim > 0) {
@@ -8555,8 +8565,17 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         // ── رسم الزخرفة — مباشرة من S._orn ──
         var _o = window.S && window.S._orn;
         if (_o && _o.show && _o.pattern && _o.pattern !== "none") {
-          var _pat = _o.pattern === "islamic" ? "islamic_geo" : _o.pattern;
-          _drawOrnamentPattern(ctx, W, H, _pat, _o.c2, _o.opacity);
+          try {
+            var _pat = _o.pattern === "islamic" ? "islamic_geo" : _o.pattern;
+            // مقياس الزخرفة — يتكيّف مع حجم الـ canvas بحيث تبدو مثل المعاينة
+            var _ornScale = W / 540;
+            ctx.save();
+            ctx.scale(_ornScale, _ornScale);
+            _drawOrnamentPattern(ctx, W / _ornScale, H / _ornScale, _pat, _o.c2, _o.opacity);
+            ctx.restore();
+          } catch(e) {
+            try { ctx.restore(); } catch(e2) {}
+          }
         }
         if (CSTATE.showGlow) {
           const grd = ctx.createRadialGradient(
