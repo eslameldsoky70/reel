@@ -10131,18 +10131,23 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
               }
             }
 
-            // video frame — try/catch لأن VideoFrame(canvas) قد يرمي على بعض الأجهزة
+            // video frame — نعمل snapshot فوري من الـ canvas بعد الرسم مباشرةً
+            // ImageBitmap بتضمن إن الـ frame اللي بيتسجل هو نفس اللي رسمناه بالظبط
             try {
               const ts = globalFrame * frameDurUs;
-              const vf = new VideoFrame(canvas, {
-                timestamp: ts,
-                duration: frameDurUs,
-              });
+              let vf;
+              if (typeof createImageBitmap === "function") {
+                // snapshot فوري — معزول عن أي تغيير لاحق للـ canvas
+                const bmp = await createImageBitmap(canvas);
+                vf = new VideoFrame(bmp, { timestamp: ts, duration: frameDurUs });
+                bmp.close();
+              } else {
+                vf = new VideoFrame(canvas, { timestamp: ts, duration: frameDurUs });
+              }
               videoEnc.encode(vf, { keyFrame: globalFrame % (FPS * 2) === 0 });
               vf.close();
             } catch (vfErr) {
               console.warn("VideoFrame error (frame " + globalFrame + "):", vfErr);
-              // نستمر — ما نوقفش التصدير كله بسبب frame واحد
             }
             globalFrame++;
 
@@ -10193,10 +10198,14 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
             }
             try {
               const ts = globalFrame * frameDurUs;
-              const vf = new VideoFrame(canvas, {
-                timestamp: ts,
-                duration: frameDurUs,
-              });
+              let vf;
+              if (typeof createImageBitmap === "function") {
+                const bmp = await createImageBitmap(canvas);
+                vf = new VideoFrame(bmp, { timestamp: ts, duration: frameDurUs });
+                bmp.close();
+              } else {
+                vf = new VideoFrame(canvas, { timestamp: ts, duration: frameDurUs });
+              }
               videoEnc.encode(vf, { keyFrame: false });
               vf.close();
             } catch (vfErr) {
@@ -10311,11 +10320,14 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         exportAyahs,
         total,
       ) {
-        // الخطوة 1: رسم كل الـ frames وحفظها
+        // الخطوة 1: رسم كل الـ frames وحفظها كـ ImageBitmap (بدون ضغط)
         const FPS = qp.fps,
           msPerFrame = 1000 / FPS;
-        const frameBlobs = [];
-        let globalFrame = 0; // عداد الـ frames الكلي لـ _expGlobalFrame
+        /* نحفظ ImageBitmaps بدل JPEG blobs — pixel perfect بدون أي compression */
+        const frameBlobs = []; // اسم محفوظ للتوافق — بيحتوي ImageBitmap أو Blob
+        const _useImageBitmap = typeof createImageBitmap === "function"
+          && typeof ImageBitmap !== "undefined";
+        let globalFrame = 0;
 
         // preload كل صور الخلفية قبل لوب التصدير
         if (_bgImages && _bgImages.length > 1) await _bgPreloadAll();
@@ -10375,18 +10387,27 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
 
           const ayahFrames = Math.ceil(buf.duration * FPS);
           let hlActive = -1;
-          /* جودة الـ frame: JPEG 0.97 للدقة العالية — نص عربي يحتاج جودة عالية */
-          const _blobType = "image/jpeg";
-          const _blobQuality = 0.97;
           for (let f = 0; f < ayahFrames; f++) {
             if (_expAbort) break;
             window._expGlobalFrame = globalFrame;
             window._expFPS = FPS;
             hlActive = _drawVerseFrame(vd, f, msPerFrame, hlActive);
-            const blob = await new Promise((res) =>
-              canvas.toBlob(res, _blobType, _blobQuality),
-            );
-            if (blob) frameBlobs.push(blob);
+
+            /* حفظ الـ frame — ImageBitmap أسرع وبدون ضغط */
+            if (_useImageBitmap) {
+              try {
+                const bmp = await createImageBitmap(canvas);
+                frameBlobs.push(bmp);
+              } catch(e) {
+                /* fallback لـ JPEG لو ImageBitmap فشلت */
+                const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg", 0.97));
+                if (blob) frameBlobs.push(blob);
+              }
+            } else {
+              const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg", 0.97));
+              if (blob) frameBlobs.push(blob);
+            }
+
             globalFrame++;
             _setProgress(_expElapsedBefore + f / FPS);
             if (f % 8 === 0) await new Promise((r) => setTimeout(r, 0));
@@ -10630,29 +10651,29 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
           await new Promise((r) => setTimeout(r, 100)).then(() => expCtx.resume().catch(() => {}));
         audioSrc.start(0);
 
-        /* ── iOS-safe frame draw: createImageBitmap غير مدعوم في iOS < 15
-           نستخدم Image() + ObjectURL كـ fallback شامل ── */
-        const _supportsImageBitmap = typeof createImageBitmap === "function";
-        async function _drawFrameBlob(blob) {
-          if (_supportsImageBitmap) {
-            try {
-              const bmp = await createImageBitmap(blob);
-              ctx.drawImage(bmp, 0, 0);
-              bmp.close();
-              return;
-            } catch (e) { /* fall through to Image() path */ }
+        /* ── frame draw: يقبل ImageBitmap (مباشر) أو Blob (fallback) ── */
+        async function _drawFrameBlob(frame) {
+          if (!frame) return;
+          /* ImageBitmap — رسم مباشر بدون decode */
+          if (frame instanceof ImageBitmap) {
+            ctx.drawImage(frame, 0, 0);
+            frame.close();
+            return;
           }
-          await new Promise((res, rej) => {
-            const url = URL.createObjectURL(blob);
-            const img = new Image();
-            img.onload = () => {
-              ctx.drawImage(img, 0, 0);
-              URL.revokeObjectURL(url);
-              res();
-            };
-            img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("img load failed")); };
-            img.src = url;
-          });
+          /* Blob — decode أولاً */
+          try {
+            const bmp = await createImageBitmap(frame);
+            ctx.drawImage(bmp, 0, 0);
+            bmp.close();
+          } catch (e) {
+            await new Promise((res) => {
+              const url = URL.createObjectURL(frame);
+              const img = new Image();
+              img.onload = () => { ctx.drawImage(img, 0, 0); URL.revokeObjectURL(url); res(); };
+              img.onerror = () => { URL.revokeObjectURL(url); res(); };
+              img.src = url;
+            });
+          }
         }
 
         /* ── replay loop ──
