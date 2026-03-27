@@ -10302,11 +10302,11 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         exportAyahs,
         total,
       ) {
+        // الخطوة 1: رسم كل الـ frames وحفظها
         const FPS = qp.fps,
           msPerFrame = 1000 / FPS;
-        // ── الخطوة 1: رسم كل الـ frames وحفظها كـ JPEG ──
         const frameBlobs = [];
-        let globalFrame = 0;
+        let globalFrame = 0; // عداد الـ frames الكلي لـ _expGlobalFrame
 
         // preload كل صور الخلفية قبل لوب التصدير
         if (_bgImages && _bgImages.length > 1) await _bgPreloadAll();
@@ -10320,8 +10320,10 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
           syncCSTATE();
           window._expChunkAt = [];
           if (verseChunks.length > 1) {
+            const ft = window._masFullTimings;
             const tm = _masGetTiming(vd.ayahN);
             if (tm && tm.chunks && tm.chunks.length > 1) {
+              // ── استخدم توقيتات MAS الفعلية ──
               const ayahStart = tm.start;
               const ayahEnd =
                 tm.end !== null && tm.end > ayahStart
@@ -10341,6 +10343,7 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
                 window._expChunkAt.push({ f: frame, ci });
               }
             } else {
+              // ── مفيش توقيتات MAS — وزّع بالتساوي ──
               const numChunks = verseChunks.length;
               const framesPerChunk = Math.floor(
                 Math.ceil(buf.duration * FPS) / numChunks,
@@ -10363,15 +10366,18 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
 
           const ayahFrames = Math.ceil(buf.duration * FPS);
           let hlActive = -1;
+          /* جودة الـ frame: JPEG 0.97 للدقة العالية — نص عربي يحتاج جودة عالية */
+          const _blobType = "image/jpeg";
+          const _blobQuality = 0.97;
           for (let f = 0; f < ayahFrames; f++) {
             if (_expAbort) break;
             window._expGlobalFrame = globalFrame;
             window._expFPS = FPS;
             hlActive = _drawVerseFrame(vd, f, msPerFrame, hlActive);
             const blob = await new Promise((res) =>
-              canvas.toBlob(res, "image/jpeg", 0.95),
+              canvas.toBlob(res, _blobType, _blobQuality),
             );
-            frameBlobs.push(blob);
+            if (blob) frameBlobs.push(blob);
             globalFrame++;
             _setProgress(_expElapsedBefore + f / FPS);
             if (f % 8 === 0) await new Promise((r) => setTimeout(r, 0));
@@ -10385,7 +10391,6 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
           }
           _expElapsedBefore += buf.duration;
         }
-
         if (_expAbort) {
           _finishExport(expCtx);
           return;
@@ -10440,8 +10445,8 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         }
         // الـ TAIL samples تبقى 0 (صمت) تلقائياً
 
-        // captureStream — iOS Safari لا تدعم requestFrame() إطلاقاً
-        // نكشف ذلك مسبقاً ونستخدم captureStream(FPS) بدلاً من (0)
+        // captureStream — نستخدم rate=0 دايماً + requestFrame() لضمان frame-accurate capture
+        // captureStream(FPS) على iOS بيرسل frames بـ timing غلط وبينتج فيديو وحش
         const _supportsReqFrame = (() => {
           try {
             const _t = document.createElement("canvas").captureStream(0).getVideoTracks()[0];
@@ -10451,8 +10456,14 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         /* captureStream قد يرمي exception على iOS القديم أو بيئات محدودة */
         let videoStream, videoTrack;
         try {
-          videoStream = canvas.captureStream(_supportsReqFrame ? 0 : FPS);
+          /* نستخدم 0 دايماً — نتحكم في الـ frames يدوياً عبر requestFrame() */
+          videoStream = canvas.captureStream(0);
           videoTrack = videoStream?.getVideoTracks()[0] ?? null;
+          /* لو requestFrame مش متاح (نادر) — نرجع لـ captureStream(FPS) */
+          if (videoTrack && !_supportsReqFrame) {
+            videoStream = canvas.captureStream(FPS);
+            videoTrack = videoStream?.getVideoTracks()[0] ?? null;
+          }
         } catch (csErr) {
           console.warn("captureStream failed:", csErr);
           videoStream = null;
@@ -10610,8 +10621,8 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
           await new Promise((r) => setTimeout(r, 100)).then(() => expCtx.resume().catch(() => {}));
         audioSrc.start(0);
 
-        // ── الخطوة 2: replay الـ JPEG frames بسرعة بينما MediaRecorder يسجّل ──
-        /* iOS-safe frame draw: createImageBitmap متاح في iOS 15.4+ — نستخدم Image() كـ fallback */
+        /* ── iOS-safe frame draw: createImageBitmap غير مدعوم في iOS < 15
+           نستخدم Image() + ObjectURL كـ fallback شامل ── */
         const _supportsImageBitmap = typeof createImageBitmap === "function";
         async function _drawFrameBlob(blob) {
           if (_supportsImageBitmap) {
@@ -10635,15 +10646,37 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
           });
         }
 
+        /* ── replay loop ──
+           المشكلة: على iOS الـ draw بتاخد وقت متغير، فالـ recorder بيسجل frames قديمة
+           الحل: requestFrame فوراً بعد الرسم، ثم ننتظر الوقت المتبقي فقط ── */
         const t0 = performance.now();
         for (let f = 0; f < frameBlobs.length; f++) {
           if (_expAbort) break;
-          await _drawFrameBlob(frameBlobs[f]);
+
+          const frameStart = performance.now();
+
+          /* رسم الـ frame — مع timeout 5 ثوان */
+          await Promise.race([
+            _drawFrameBlob(frameBlobs[f]),
+            new Promise((_, rej) => setTimeout(() => rej(new Error("frame_timeout")), 5000)),
+          ]).catch((e) => { console.warn("frame", f, "draw:", e.message); });
+
+          /* حرّر الـ blob فوراً بعد الرسم */
+          frameBlobs[f] = null;
+
+          /* أبلغ الـ recorder فوراً بعد الرسم مباشرةً */
           if (videoTrack?.requestFrame) videoTrack.requestFrame();
-          const wait = (f + 1) * msPerFrame - (performance.now() - t0);
-          if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-          if (f % 20 === 0)
+
+          /* انتظر الوقت المتبقي من هذا الـ frame فقط */
+          const elapsed = performance.now() - frameStart;
+          const remaining = msPerFrame - elapsed;
+          if (remaining > 2) await new Promise((r) => setTimeout(r, remaining));
+
+          if (f % 10 === 0) {
+            const pct = Math.round((f / frameBlobs.length) * 100);
+            xShow(total, total, "تسجيل الفيديو... " + pct + "%");
             _setProgress((_expTotalDur * f) / frameBlobs.length);
+          }
         }
 
         await new Promise((r) => setTimeout(r, 500));
