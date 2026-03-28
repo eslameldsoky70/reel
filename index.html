@@ -16,7 +16,7 @@
       child-src blob:;
     "
     />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <!-- PWA -->
     <meta name="theme-color" content="#c9973a" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -2244,9 +2244,17 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         padding: 0;
       }
       html,
+      html {
+        height: 100%;
+        overflow: hidden;
+        touch-action: none;
+        overscroll-behavior: none;
+      }
       body {
         height: 100%;
         overflow: hidden;
+        overscroll-behavior: none;
+        touch-action: none;
         font-family: "Cairo", sans-serif;
         background: #070e09;
         color: #f0ebe1;
@@ -10330,9 +10338,6 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         const FPS = qp.fps, msPerFrame = 1000 / FPS;
         let globalFrame = 0;
 
-        // preload صور الخلفية
-        if (_bgImages && _bgImages.length > 1) await _bgPreloadAll();
-
         /* ── iOS version check ── */
         const _iosVer = _isIOS
           ? (() => { const m = navigator.userAgent.match(/OS (\d+)_/); return m ? parseInt(m[1]) : 0; })()
@@ -10357,10 +10362,66 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
           wp += buf.length;
         }
 
+        /* ── الخطوة 1: رسم كل الـ frames وحفظها كـ JPEG (الرسم بطيء على iOS — نفصله عن التسجيل) ── */
+        const frameBlobs = [];
+
+        if (_bgImages && _bgImages.length > 1) await _bgPreloadAll();
+
+        for (let idx = 0; idx < verseData.length; idx++) {
+          if (_expAbort) break;
+          const vd = verseData[idx], buf = buffers[idx];
+          _prepVerse(vd, exportAyahs);
+          markCstateDirty(); syncCSTATE();
+          window._expChunkAt = [];
+          if (verseChunks.length > 1) {
+            const tm = _masGetTiming(vd.ayahN);
+            if (tm && tm.chunks && tm.chunks.length > 1) {
+              const ayahStart = tm.start;
+              const ayahEnd = (tm.end !== null && tm.end > ayahStart) ? tm.end : ayahStart + buf.duration;
+              const ayahDur = Math.max(0.001, ayahEnd - ayahStart);
+              const totalFrames = Math.ceil(buf.duration * FPS);
+              for (let ci = 1; ci < tm.chunks.length; ci++) {
+                const ch = tm.chunks[ci];
+                if (!ch || ch.start === null) continue;
+                const chRelPct = Math.min(Math.max(0, ch.start - ayahStart) / ayahDur, 0.99);
+                const frame = Math.max(1, Math.min(Math.round(chRelPct * totalFrames), totalFrames - 1));
+                window._expChunkAt.push({ f: frame, ci });
+              }
+            } else {
+              const nc = verseChunks.length;
+              const fpc = Math.floor(Math.ceil(buf.duration * FPS) / nc);
+              for (let ci = 1; ci < nc; ci++) window._expChunkAt.push({ f: ci * fpc, ci });
+            }
+          }
+          xShow(idx + 1, total, S.surah.ar + " — آية " + arN(vd.ayahN));
+          setSbar("🎬 رسم آية " + arN(vd.ayahN) + " (" + (idx+1) + "/" + total + ")", "#f47c7c");
+
+          const ayahFrames = Math.ceil(buf.duration * FPS);
+          let hlActive = -1;
+          for (let f = 0; f < ayahFrames; f++) {
+            if (_expAbort) break;
+            window._expGlobalFrame = globalFrame;
+            window._expFPS = FPS;
+            hlActive = _drawVerseFrame(vd, f, msPerFrame, hlActive);
+            const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg", 0.88));
+            frameBlobs.push(blob);
+            globalFrame++;
+            _setProgress(_expElapsedBefore + f / FPS);
+            if (f % 8 === 0) await new Promise((r) => setTimeout(r, 0)); // yield — يمنع iOS من تجميد التبويب
+          }
+          if (hlActive >= 0) {
+            const o = document.getElementById("w" + hlActive);
+            if (o) { o.style.color = o.dataset.base || S.color || "#fff"; o.style.textShadow = ""; }
+          }
+          _expElapsedBefore += buf.duration;
+        }
+
+        if (_expAbort) { _finishExport(expCtx); return; }
+
         /* ── إعداد captureStream ── */
         let videoStream, videoTrack;
         try {
-          videoStream = canvas.captureStream(FPS); // نستخدم FPS مباشرة — الـ recorder يسحب بنفسه
+          videoStream = canvas.captureStream(0); // 0 = لا يسحب تلقائياً — نستدعي requestFrame() يدوياً لضمان 30fps دقيق
           videoTrack = videoStream?.getVideoTracks()[0] ?? null;
         } catch (e) {
           console.warn("captureStream failed:", e);
@@ -10460,67 +10521,37 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         if (expCtx.state === "suspended") await expCtx.resume().catch(() => {});
         audioSrc.start(0);
 
-        /* ══ المسار الوحيد: ارسم مباشرة على الـ canvas أثناء التسجيل ══
-           captureStream(FPS) بيسحب الـ frames تلقائياً بالـ FPS الصح
-           لا حاجة لـ requestFrame() أو replay loop */
-        const t0 = performance.now();
-        for (let idx = 0; idx < verseData.length; idx++) {
+        /* ══ الخطوة 2: أعد عرض الـ JPEG frames على الـ canvas بسرعة (5ms/frame) — الـ MediaRecorder يسجّل بـ 30fps ══ */
+        setSbar("🎬 تجميع الفيديو...", "#c9973a");
+        xShow(total, total, "🎬 جارٍ التجميع...");
+
+        const replayImg = new Image();
+        let totalFramesReplayed = 0;
+        const replayT0 = performance.now();
+
+        for (let fi = 0; fi < frameBlobs.length; fi++) {
           if (_expAbort) break;
-          const vd = verseData[idx], buf = buffers[idx];
-          _prepVerse(vd, exportAyahs);
-          markCstateDirty(); syncCSTATE();
-
-          // حساب chunk transitions
-          window._expChunkAt = [];
-          if (verseChunks.length > 1) {
-            const tm = _masGetTiming(vd.ayahN);
-            if (tm && tm.chunks && tm.chunks.length > 1) {
-              const ayahStart = tm.start;
-              const ayahEnd = (tm.end !== null && tm.end > ayahStart) ? tm.end : ayahStart + buf.duration;
-              const ayahDur = Math.max(0.001, ayahEnd - ayahStart);
-              const totalFrames = Math.ceil(buf.duration * FPS);
-              for (let ci = 1; ci < tm.chunks.length; ci++) {
-                const ch = tm.chunks[ci];
-                if (!ch || ch.start === null) continue;
-                const chRelPct = Math.min(Math.max(0, ch.start - ayahStart) / ayahDur, 0.99);
-                const frame = Math.max(1, Math.min(Math.round(chRelPct * totalFrames), totalFrames - 1));
-                window._expChunkAt.push({ f: frame, ci });
+          const blobUrl = URL.createObjectURL(frameBlobs[fi]);
+          await new Promise((res) => {
+            replayImg.onload = () => {
+              ctx.drawImage(replayImg, 0, 0);
+              // requestFrame() يضمن التقاط هذه الـ frame بالضبط — 30fps دقيق
+              if (videoTrack && typeof videoTrack.requestFrame === "function") {
+                videoTrack.requestFrame();
               }
-            } else {
-              const nc = verseChunks.length;
-              const fpc = Math.floor(Math.ceil(buf.duration * FPS) / nc);
-              for (let ci = 1; ci < nc; ci++) window._expChunkAt.push({ f: ci * fpc, ci });
-            }
-          }
-
-          xShow(idx + 1, total, S.surah.ar + " — آية " + arN(vd.ayahN));
-          setSbar("🎬 تصدير آية " + arN(vd.ayahN) + " (" + (idx+1) + "/" + total + ")", "#f47c7c");
-
-          const ayahFrames = Math.ceil(buf.duration * FPS);
-          let hlActive = -1;
-          const ayahT0 = performance.now();
-
-          for (let f = 0; f < ayahFrames; f++) {
-            if (_expAbort) break;
-            window._expGlobalFrame = globalFrame;
-            window._expFPS = FPS;
-            hlActive = _drawVerseFrame(vd, f, msPerFrame, hlActive);
-            globalFrame++;
-
-            _setProgress(_expElapsedBefore + f / FPS);
-
-            // انتظر موعد الـ frame التالي — timing دقيق
-            const nextT = ayahT0 + (f + 1) * msPerFrame;
-            const wait = nextT - performance.now();
-            if (wait > 0.5) await new Promise((r) => setTimeout(r, wait));
-            else if (f % 15 === 0) await new Promise((r) => setTimeout(r, 0));
-          }
-
-          if (hlActive >= 0) {
-            const o = document.getElementById("w" + hlActive);
-            if (o) { o.style.color = o.dataset.base || S.color || "#fff"; o.style.textShadow = ""; }
-          }
-          _expElapsedBefore += buf.duration;
+              URL.revokeObjectURL(blobUrl);
+              frameBlobs[fi] = null; // تحرير الذاكرة فور الانتهاء
+              res();
+            };
+            replayImg.onerror = () => { URL.revokeObjectURL(blobUrl); res(); };
+            replayImg.src = blobUrl;
+          });
+          totalFramesReplayed++;
+          _setProgress(totalFramesReplayed / FPS);
+          // احترام timing الـ 30fps (33ms/frame) — نضمن أن MediaRecorder لا يلتقط frame زائدة
+          const nextT = replayT0 + (fi + 1) * msPerFrame;
+          const waitMs = Math.max(4, nextT - performance.now());
+          await new Promise((r) => setTimeout(r, waitMs));
         }
 
         if (_expAbort) { _finishExport(expCtx); return; }
@@ -15198,6 +15229,37 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
 
         /* ── ديسكتوب / تابلت: انتظر beforeinstallprompt ── */
         /* سيُظهر تلقائياً إذا دعم المتصفح التثبيت */
+      })();
+    </script>
+    <script>
+      /* ── حماية الكود ── */
+      (function () {
+        // منع right-click
+        document.addEventListener("contextmenu", function (e) {
+          e.preventDefault();
+        });
+
+        // منع اختصارات DevTools وعرض المصدر
+        document.addEventListener("keydown", function (e) {
+          // F12
+          if (e.key === "F12") { e.preventDefault(); return; }
+          // Ctrl+U / Cmd+U — view source
+          if ((e.ctrlKey || e.metaKey) && e.key === "u") { e.preventDefault(); return; }
+          // Ctrl+Shift+I / Cmd+Option+I — DevTools
+          if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === "i" || e.key === "I")) { e.preventDefault(); return; }
+          // Ctrl+Shift+J — Console
+          if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === "j" || e.key === "J")) { e.preventDefault(); return; }
+          // Ctrl+Shift+C — Inspector
+          if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === "c" || e.key === "C")) { e.preventDefault(); return; }
+          // Ctrl+S — Save page
+          if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); return; }
+          // Ctrl+A — Select all
+          if ((e.ctrlKey || e.metaKey) && e.key === "a") { e.preventDefault(); return; }
+        });
+
+        // منع السحب والتحديد
+        document.addEventListener("selectstart", function (e) { e.preventDefault(); });
+        document.addEventListener("dragstart",   function (e) { e.preventDefault(); });
       })();
     </script>
   </body>
