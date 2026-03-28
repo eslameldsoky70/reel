@@ -10403,8 +10403,12 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
             window._expGlobalFrame = globalFrame;
             window._expFPS = FPS;
             hlActive = _drawVerseFrame(vd, f, msPerFrame, hlActive);
-            const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg", 0.88));
-            frameBlobs.push(blob);
+            const blob = await new Promise((res) => {
+              const _t = setTimeout(() => res(null), 4000); // watchdog: iOS قد يتأخر
+              canvas.toBlob((b) => { clearTimeout(_t); res(b); }, "image/jpeg", 0.88);
+            });
+            if (blob) frameBlobs.push(blob);
+            else { frameBlobs.push(null); console.warn("toBlob null frame", f); }
             globalFrame++;
             _setProgress(_expElapsedBefore + f / FPS);
             if (f % 8 === 0) await new Promise((r) => setTimeout(r, 0)); // yield — يمنع iOS من تجميد التبويب
@@ -10531,9 +10535,25 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
 
         for (let fi = 0; fi < frameBlobs.length; fi++) {
           if (_expAbort) break;
-          const blobUrl = URL.createObjectURL(frameBlobs[fi]);
+          const blob = frameBlobs[fi];
+          if (!blob) {
+            // frame مفقودة — تجاوز بدون توقف
+            totalFramesReplayed++;
+            _setProgress(totalFramesReplayed / FPS);
+            await new Promise((r) => setTimeout(r, msPerFrame));
+            continue;
+          }
+          const blobUrl = URL.createObjectURL(blob);
           await new Promise((res) => {
+            const _watchdog = setTimeout(() => {
+              // إذا تعطّل onload (مشكلة iOS) — نتجاوز هذه الـ frame
+              console.warn("replayImg onload timeout for frame", fi);
+              URL.revokeObjectURL(blobUrl);
+              frameBlobs[fi] = null;
+              res();
+            }, 3000);
             replayImg.onload = () => {
+              clearTimeout(_watchdog);
               ctx.drawImage(replayImg, 0, 0);
               // requestFrame() يضمن التقاط هذه الـ frame بالضبط — 30fps دقيق
               if (videoTrack && typeof videoTrack.requestFrame === "function") {
@@ -10543,7 +10563,12 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
               frameBlobs[fi] = null; // تحرير الذاكرة فور الانتهاء
               res();
             };
-            replayImg.onerror = () => { URL.revokeObjectURL(blobUrl); res(); };
+            replayImg.onerror = () => {
+              clearTimeout(_watchdog);
+              URL.revokeObjectURL(blobUrl);
+              frameBlobs[fi] = null;
+              res();
+            };
             replayImg.src = blobUrl;
           });
           totalFramesReplayed++;
