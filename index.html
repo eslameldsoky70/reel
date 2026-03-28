@@ -16,7 +16,7 @@
       child-src blob:;
     "
     />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- PWA -->
     <meta name="theme-color" content="#c9973a" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -2244,17 +2244,9 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         padding: 0;
       }
       html,
-      html {
-        height: 100%;
-        overflow: hidden;
-        touch-action: none;
-        overscroll-behavior: none;
-      }
       body {
         height: 100%;
         overflow: hidden;
-        overscroll-behavior: none;
-        touch-action: none;
         font-family: "Cairo", sans-serif;
         background: #070e09;
         color: #f0ebe1;
@@ -15206,37 +15198,6 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
 
         /* ── ديسكتوب / تابلت: انتظر beforeinstallprompt ── */
         /* سيُظهر تلقائياً إذا دعم المتصفح التثبيت */
-      })();
-    </script>
-    <script>
-      /* ── حماية الكود ── */
-      (function () {
-        // منع right-click
-        document.addEventListener("contextmenu", function (e) {
-          e.preventDefault();
-        });
-
-        // منع اختصارات DevTools وعرض المصدر
-        document.addEventListener("keydown", function (e) {
-          // F12
-          if (e.key === "F12") { e.preventDefault(); return; }
-          // Ctrl+U / Cmd+U — view source
-          if ((e.ctrlKey || e.metaKey) && e.key === "u") { e.preventDefault(); return; }
-          // Ctrl+Shift+I / Cmd+Option+I — DevTools
-          if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === "i" || e.key === "I")) { e.preventDefault(); return; }
-          // Ctrl+Shift+J — Console
-          if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === "j" || e.key === "J")) { e.preventDefault(); return; }
-          // Ctrl+Shift+C — Inspector
-          if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === "c" || e.key === "C")) { e.preventDefault(); return; }
-          // Ctrl+S — Save page
-          if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); return; }
-          // Ctrl+A — Select all
-          if ((e.ctrlKey || e.metaKey) && e.key === "a") { e.preventDefault(); return; }
-        });
-
-        // منع السحب والتحديد
-        document.addEventListener("selectstart", function (e) { e.preventDefault(); });
-        document.addEventListener("dragstart",   function (e) { e.preventDefault(); });
       })();
     </script>
   </body>
