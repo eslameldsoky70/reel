@@ -2641,6 +2641,7 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         position: relative;
         overflow: hidden;
         flex-shrink: 0;
+        transition: width .35s ease, height .35s ease, border-radius .35s ease;
       }
       .screen {
         position: absolute;
@@ -7412,59 +7413,65 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
                 </div>
               </div>
             </div>
-            <!-- جودة الفيديو + معدل الإطارات -->
-            <div style="display: flex; gap: 8px; margin-bottom: 10px">
-              <div style="flex: 1">
-                <div
-                  style="font-size: 10px; color: #6e8878; margin-bottom: 3px"
-                >
-                  جودة الفيديو
+            <!-- ══ Preset Dropdown ══ -->
+            <div style="margin-bottom:10px;position:relative;">
+              <div style="font-size:10px;color:#6e8878;margin-bottom:5px;">جودة التصدير</div>
+
+              <!-- زر الفتح -->
+              <div id="presetTrigger" onclick="togglePresetDropdown()"
+                style="display:flex;align-items:center;justify-content:space-between;
+                       background:#112016;border:1.5px solid rgba(201,151,58,0.45);
+                       border-radius:9px;padding:9px 12px;cursor:pointer;transition:.2s;
+                       user-select:none;-webkit-user-select:none;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span id="presetTriggerIcon" style="font-size:16px;">🎬</span>
+                  <div>
+                    <div id="presetTriggerLabel" style="font-size:12px;font-weight:700;color:#e4b55a;">شورتس قياسي</div>
+                    <div id="presetTriggerTag"   style="font-size:10px;color:#6e8878;">1080p · 30fps · 4Mbps</div>
+                  </div>
                 </div>
-                <select
-                  id="s-qual"
-                  style="
-                    width: 100%;
-                    background: #112016;
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    border-radius: 6px;
-                    padding: 6px 8px;
-                    color: #e4b55a;
-                    font-size: 12px;
-                    font-family: &quot;Cairo&quot;, sans-serif;
-                    box-sizing: border-box;
-                  "
-                >
-                  <option value="800000">عالية جداً (4 Mbps)</option>
-                  <option value="500000" selected>عالية (2.5 Mbps)</option>
-                  <option value="300000">متوسطة (1.5 Mbps)</option>
-                </select>
+                <span id="presetDropArrow" style="color:#c9973a;font-size:12px;transition:transform .2s;">▼</span>
               </div>
-              <div style="flex: 1">
-                <div
-                  style="font-size: 10px; color: #6e8878; margin-bottom: 3px"
-                >
-                  معدل الإطارات
-                </div>
-                <select
-                  id="s-fps"
-                  style="
-                    width: 100%;
-                    background: #112016;
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    border-radius: 6px;
-                    padding: 6px 8px;
-                    color: #e4b55a;
-                    font-size: 12px;
-                    font-family: &quot;Cairo&quot;, sans-serif;
-                    box-sizing: border-box;
-                  "
-                >
-                  <option value="30" selected>30 fps (ريلز)</option>
-                  <option value="25">25 fps</option>
-                  <option value="60">60 fps</option>
-                </select>
+
+              <!-- القائمة المنسدلة -->
+              <div id="presetDropMenu"
+                style="display:none;position:absolute;z-index:999;width:100%;
+                       background:#0e1c13;border:1.5px solid rgba(201,151,58,0.35);
+                       border-radius:9px;margin-top:4px;overflow-y:auto;max-height:220px;
+                       box-shadow:0 8px 24px rgba(0,0,0,0.5);
+                       -webkit-overflow-scrolling:touch;">
+                <!-- items injected by buildPresetDropdown() -->
               </div>
             </div>
+
+            <!-- Custom preset row -->
+            <div id="customPresetRow" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;margin-bottom:8px;">
+              <div style="font-size:10px;color:#6e8878;margin-bottom:6px;">إعدادات مخصصة</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                <div>
+                  <div style="font-size:9px;color:#6e8878;margin-bottom:2px;">العرض (px)</div>
+                  <input id="cpW" type="number" value="1080" min="360" max="3840" oninput="updateCustomPreset()" style="width:100%;background:#112016;border:1px solid rgba(255,255,255,0.1);border-radius:5px;padding:5px 6px;color:#e4b55a;font-size:12px;font-family:'Cairo',sans-serif;box-sizing:border-box;">
+                </div>
+                <div>
+                  <div style="font-size:9px;color:#6e8878;margin-bottom:2px;">الارتفاع (px)</div>
+                  <input id="cpH" type="number" value="1920" min="360" max="3840" oninput="updateCustomPreset()" style="width:100%;background:#112016;border:1px solid rgba(255,255,255,0.1);border-radius:5px;padding:5px 6px;color:#e4b55a;font-size:12px;font-family:'Cairo',sans-serif;box-sizing:border-box;">
+                </div>
+                <div>
+                  <div style="font-size:9px;color:#6e8878;margin-bottom:2px;">معدل الإطارات</div>
+                  <select id="cpFps" onchange="updateCustomPreset()" style="width:100%;background:#112016;border:1px solid rgba(255,255,255,0.1);border-radius:5px;padding:5px 6px;color:#e4b55a;font-size:12px;font-family:'Cairo',sans-serif;box-sizing:border-box;">
+                    <option value="24">24 fps</option><option value="25">25 fps</option><option value="30" selected>30 fps</option><option value="60">60 fps</option>
+                  </select>
+                </div>
+                <div>
+                  <div style="font-size:9px;color:#6e8878;margin-bottom:2px;">البيترات (Mbps)</div>
+                  <input id="cpBr" type="number" value="8" min="1" max="50" oninput="updateCustomPreset()" style="width:100%;background:#112016;border:1px solid rgba(255,255,255,0.1);border-radius:5px;padding:5px 6px;color:#e4b55a;font-size:12px;font-family:'Cairo',sans-serif;box-sizing:border-box;">
+                </div>
+              </div>
+            </div>
+
+            <!-- hidden selects للتوافق مع الكود القديم -->
+            <select id="s-qual" style="display:none"><option value="4000000" selected>4 Mbps</option></select>
+            <select id="s-fps"  style="display:none"><option value="30" selected>30</option></select>
             <!-- زرار التصدير -->
             <button
               id="exportBtn"
@@ -12653,6 +12660,12 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
           bitrate: p.bitrate,
         };
 
+        // تحديث الـ hidden selects عشان الكود القديم يقرأ القيم الصح
+        const squal = document.getElementById("s-qual");
+        const sfps  = document.getElementById("s-fps");
+        if (squal) { squal.innerHTML = `<option value="${p.bitrate}" selected>${p.bitrate}</option>`; }
+        if (sfps)  { sfps.innerHTML  = `<option value="${p.fps}" selected>${p.fps}</option>`; }
+
         // الـ canvas ثابت على 540×960 — لا يتغير بالـ preset
         canvas.width = 540;
         canvas.height = 960;
@@ -12660,27 +12673,129 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         _mtCache.clear();
         markCstateDirty();
 
-        // تحديث UI الـ presets
-        document.querySelectorAll(".preset-btn").forEach((el) => {
-          const on = el.dataset.key === key;
-          el.style.border = on
-            ? "1.5px solid #c9973a"
-            : "1.5px solid rgba(255,255,255,0.08)";
-          el.style.background = on
-            ? "rgba(201,151,58,0.12)"
-            : "rgba(255,255,255,0.02)";
-        });
+        // تحديث UI الـ preset cards — مش موجودة في الـ dropdown، بس نحدث الـ trigger
+        _updatePresetTrigger && _updatePresetTrigger(key);
 
         // لو custom، أظهر الـ controls
         const customRow = document.getElementById("customPresetRow");
-        if (customRow)
-          customRow.style.display = key === "custom" ? "block" : "none";
+        if (customRow) customRow.style.display = key === "custom" ? "block" : "none";
 
-        // تحديث وصف الـ preset المختار
+        // تحديث وصف الـ preset
         const desc = document.getElementById("presetDesc");
-        if (desc) desc.textContent = p.desc;
+        if (desc) desc.textContent = p.desc || "";
 
-        if (!silent) if (!silent) toast$("✓ " + p.label + " — " + p.tag);
+        if (!silent) toast$("✓ " + p.label + " — " + p.tag);
+      }
+
+
+      /* ── Preset Dropdown ── */
+      function buildPresetDropdown() {
+        const menu = document.getElementById("presetDropMenu");
+        if (!menu) return;
+        menu.innerHTML = Object.entries(EXPORT_PRESETS).map(([key, p]) => {
+          const on = key === currentPreset;
+          return `<div onclick="selectPreset('${key}')"
+            style="display:flex;align-items:center;gap:10px;padding:10px 13px;cursor:pointer;
+                   transition:.15s;border-bottom:1px solid rgba(255,255,255,0.05);
+                   background:${on ? "rgba(201,151,58,0.1)" : "transparent"};"
+            onmouseover="this.style.background='rgba(201,151,58,0.07)'"
+            onmouseout="this.style.background='${on ? "rgba(201,151,58,0.1)" : "transparent"}'">
+            <span style="font-size:18px;flex-shrink:0;">${p.icon}</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12px;font-weight:700;color:${on ? "#e4b55a" : "#c8d8cc"};">${p.label}</div>
+              <div style="font-size:10px;color:#6e8878;">${p.tag}${p.desc ? " · " + p.desc : ""}</div>
+            </div>
+            ${on ? '<span style="color:#c9973a;font-size:13px;flex-shrink:0;">✓</span>' : ""}
+          </div>`;
+        }).join("");
+      }
+
+      function togglePresetDropdown() {
+        const menu  = document.getElementById("presetDropMenu");
+        const arrow = document.getElementById("presetDropArrow");
+        if (!menu) return;
+        const open = menu.style.display === "block";
+        if (!open) buildPresetDropdown();
+        menu.style.display  = open ? "none" : "block";
+        if (arrow) arrow.style.transform = open ? "" : "rotate(180deg)";
+      }
+
+      function _closePresetDropdown() {
+        const menu  = document.getElementById("presetDropMenu");
+        const arrow = document.getElementById("presetDropArrow");
+        if (menu)  menu.style.display = "none";
+        if (arrow) arrow.style.transform = "";
+      }
+
+      // إغلاق عند الضغط خارج القائمة
+      document.addEventListener("click", (e) => {
+        const trigger = document.getElementById("presetTrigger");
+        const menu    = document.getElementById("presetDropMenu");
+        if (menu && trigger && !trigger.contains(e.target) && !menu.contains(e.target))
+          _closePresetDropdown();
+      });
+
+      // تشغيل buildPresetCards عند جهوزية الصفحة
+      (function() {
+        function _initPresets() {
+          applyPreset(currentPreset, true);
+          _updatePresetTrigger(currentPreset);
+        }
+        if (document.readyState === "loading")
+          document.addEventListener("DOMContentLoaded", _initPresets);
+        else
+          setTimeout(_initPresets, 0);
+      })();
+
+      /* تحديث زر الـ trigger بعد اختيار preset + تغيير مقاس المعاينة */
+      function _updatePresetTrigger(key) {
+        const p = EXPORT_PRESETS[key];
+        if (!p) return;
+
+        // تحديث الـ trigger text
+        const icon  = document.getElementById("presetTriggerIcon");
+        const label = document.getElementById("presetTriggerLabel");
+        const tag   = document.getElementById("presetTriggerTag");
+        if (icon)  icon.textContent  = p.icon;
+        if (label) label.textContent = p.label;
+        if (tag)   tag.textContent   = p.tag + " · " + (p.fps || 30) + "fps · " + ((p.bitrate||4000000)/1000000).toFixed(0) + "Mbps";
+
+        // ── تغيير مقاس المعاينة حسب نسبة العرض/الارتفاع ──
+        const phone = document.querySelector(".phone");
+        if (!phone) return;
+
+        const W = p.w || 1080, H = p.h || 1920;
+        const ratio = W / H; // 9/16=0.5625 | 16/9=1.778 | 1/1=1
+
+        // الارتفاع الأقصى المتاح للمعاينة — نثبّته ونحسب العرض منه
+        const BASE_H = 390; // ارتفاع الـ default (شورتس عمودي)
+        const BASE_W = 220;
+        const MAX_W  = 380; // حد أقصى للعرض في وضع أفقي
+
+        let newH, newW;
+        if (ratio >= 1) {
+          // أفقي أو مربع — نثبّت العرض ونحسب الارتفاع
+          newW = Math.min(MAX_W, Math.round(BASE_H * ratio));
+          newH = Math.round(newW / ratio);
+        } else {
+          // عمودي — نثبّت الارتفاع ونحسب العرض
+          newH = BASE_H;
+          newW = Math.round(BASE_H * ratio);
+        }
+
+        // border-radius يتناسب مع المقاس
+        const br = ratio >= 1 ? "18px" : "37px";
+
+        phone.style.transition = "width .35s ease, height .35s ease, border-radius .35s ease";
+        phone.style.width       = newW + "px";
+        phone.style.height      = newH + "px";
+        phone.style.borderRadius= br;
+
+        // screen inset يتناسب كمان
+        const screen = document.getElementById("screen");
+        if (screen) {
+          screen.style.borderRadius = ratio >= 1 ? "14px" : "32px";
+        }
       }
 
       // للتوافق مع الكود القديم
@@ -12760,11 +12875,9 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
       }
 
       function selectPreset(key, silent) {
-        const menu = document.getElementById("presetMenu");
-        const arrow = document.getElementById("presetArrow");
-        if (menu) menu.style.display = "none";
-        if (arrow) arrow.style.transform = "";
+        _closePresetDropdown();
         applyPreset(key, silent);
+        _updatePresetTrigger(key);
       }
 
       // إغلاق القائمة لو المستخدم ضغط برة
