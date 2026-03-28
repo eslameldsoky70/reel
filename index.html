@@ -10342,8 +10342,8 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         const _iosVer = _isIOS
           ? (() => { const m = navigator.userAgent.match(/OS (\d+)_/); return m ? parseInt(m[1]) : 0; })()
           : 99;
-        if (_isIOS && _iosVer < 15) {
-          toast$("❌ iOS " + _iosVer + " لا يدعم تصدير — يرجى تحديث iOS إلى 15.4+");
+        if (_isIOS && _iosVer < 14) {
+          toast$("❌ iOS " + _iosVer + " لا يدعم تصدير — يرجى تحديث iOS إلى 14.1+");
           _finishExport(expCtx, "❌ iOS " + _iosVer + " غير مدعوم", "#f47c7c");
           return;
         }
@@ -10422,14 +10422,31 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
 
         if (_expAbort) { _finishExport(expCtx); return; }
 
-        /* ── إعداد captureStream ── */
-        let videoStream, videoTrack;
+        /* ── إعداد captureStream (مع كشف تلقائي للإصدار) ── */
+        let videoStream, videoTrack, _hasRequestFrame;
         try {
-          videoStream = canvas.captureStream(0); // 0 = لا يسحب تلقائياً — نستدعي requestFrame() يدوياً لضمان 30fps دقيق
+          // جرّب captureStream(0) أولاً — يتيح requestFrame() لـ 30fps دقيق
+          videoStream = canvas.captureStream(0);
           videoTrack = videoStream?.getVideoTracks()[0] ?? null;
+          _hasRequestFrame = videoTrack && typeof videoTrack.requestFrame === "function";
+          if (!_hasRequestFrame) {
+            // iOS < 15.4 أو Safari القديم: لا تدعم requestFrame
+            // نعيد الإنشاء بـ FPS كمعامل ليسحب تلقائياً
+            console.log("requestFrame not supported — using captureStream(" + FPS + ")");
+            videoStream = canvas.captureStream(FPS);
+            videoTrack = videoStream?.getVideoTracks()[0] ?? null;
+          }
         } catch (e) {
           console.warn("captureStream failed:", e);
-          videoStream = null; videoTrack = null;
+          // بعض أجهزة iOS القديمة: نجرب captureStream() بدون معامل
+          try {
+            videoStream = canvas.captureStream();
+            videoTrack = videoStream?.getVideoTracks()[0] ?? null;
+            _hasRequestFrame = false;
+          } catch (e2) {
+            console.warn("captureStream() also failed:", e2);
+            videoStream = null; videoTrack = null; _hasRequestFrame = false;
+          }
         }
 
         const expDest = expCtx.createMediaStreamDestination();
@@ -10555,10 +10572,8 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
             replayImg.onload = () => {
               clearTimeout(_watchdog);
               ctx.drawImage(replayImg, 0, 0);
-              // requestFrame() يضمن التقاط هذه الـ frame بالضبط — 30fps دقيق
-              if (videoTrack && typeof videoTrack.requestFrame === "function") {
-                videoTrack.requestFrame();
-              }
+              // requestFrame() يضمن التقاط هذه الـ frame بالضبط — 30fps دقيق (iOS 15.4+)
+              if (_hasRequestFrame) videoTrack.requestFrame();
               URL.revokeObjectURL(blobUrl);
               frameBlobs[fi] = null; // تحرير الذاكرة فور الانتهاء
               res();
