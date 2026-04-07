@@ -5406,13 +5406,14 @@ If you want to offset all timestamps of a track such that the first one is zero,
           background: transparent;
           color: #6e8878;
           font-family: "Cairo", sans-serif;
-          font-size: 9px;
+          font-size: 8px;
           transition: color 0.2s;
-          padding: 4px 0;
+          padding: 4px 2px;
           border-top: 2px solid transparent;
+          min-width: 0;
         }
         .mob-nav-btn .mn-ico {
-          font-size: 16px;
+          font-size: 15px;
           line-height: 1;
         }
         .mob-nav-btn.active {
@@ -8935,22 +8936,51 @@ If you want to offset all timestamps of a track such that the first one is zero,
             </div>
             <!-- جودة التصدير -->
             <div style="margin-bottom: 10px; position: relative">
-              <div style="font-size: 10px; color: #6e8878; margin-bottom: 5px">
-                جودة التصدير (1080×1920 · 30fps · 4Mbps)
+              <div style="font-size: 10px; color: #6e8878; margin-bottom: 5px">جودة التصدير</div>
+              <!-- Preset trigger button -->
+              <div id="presetTrigger" onclick="togglePresetDropdown()"
+                style="display:flex;align-items:center;gap:8px;padding:8px 12px;
+                       background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+                       border-radius:8px;cursor:pointer;user-select:none;transition:.2s;"
+                onmouseover="this.style.background='rgba(201,151,58,.07)'"
+                onmouseout="this.style.background='rgba(255,255,255,.05)'">
+                <span id="presetTriggerIcon" style="font-size:16px;flex-shrink:0;">🎬</span>
+                <div style="flex:1;min-width:0;">
+                  <div id="presetTriggerLabel" style="font-size:12px;font-weight:700;color:#c8d8cc;">شورتس قياسي</div>
+                  <div id="presetTriggerTag" style="font-size:10px;color:#6e8878;">1080p · 30fps · 4Mbps</div>
+                </div>
+                <span id="presetDropArrow" style="color:#6e8878;font-size:10px;transition:transform .2s;">▼</span>
               </div>
-              <!-- hidden IDs for backward compatibility -->
-              <div id="presetTrigger" style="display: none"></div>
-              <div id="presetDropMenu" style="display: none"></div>
+              <!-- Dropdown -->
+              <div id="presetDropMenu"
+                style="display:none;position:absolute;bottom:calc(100% + 4px);right:0;left:0;z-index:200;
+                       background:#0e2018;border:1px solid rgba(201,151,58,.25);border-radius:10px;
+                       overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.6);max-height:280px;overflow-y:auto;">
+              </div>
             </div>
-            <div id="customPresetRow" style="display: none"></div>
 
-            <!-- hidden selects للتوافق مع الكود القديم -->
-            <select id="s-qual" style="display: none">
-              <option value="4000000" selected>4 Mbps</option>
-            </select>
-            <select id="s-fps" style="display: none">
-              <option value="30" selected>30</option>
-            </select>
+            <!-- custom preset row -->
+            <div id="customPresetRow" style="display:none;padding:8px;background:rgba(255,255,255,.03);
+                 border:1px solid rgba(255,255,255,.08);border-radius:8px;margin-bottom:10px;">
+              <div style="font-size:10px;color:#6e8878;margin-bottom:6px;">إعدادات مخصصة</div>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <label style="font-size:10px;color:#b5c4bc;flex-shrink:0;">Bitrate</label>
+                <select id="s-qual" style="flex:1;background:#0c1810;border:1px solid rgba(255,255,255,.12);
+                        border-radius:6px;color:#c8d8cc;font-size:11px;padding:4px 6px;">
+                  <option value="2000000">2 Mbps</option>
+                  <option value="4000000" selected>4 Mbps</option>
+                  <option value="6000000">6 Mbps</option>
+                  <option value="8000000">8 Mbps</option>
+                  <option value="16000000">16 Mbps</option>
+                </select>
+                <label style="font-size:10px;color:#b5c4bc;flex-shrink:0;">FPS</label>
+                <select id="s-fps" style="width:60px;background:#0c1810;border:1px solid rgba(255,255,255,.12);
+                        border-radius:6px;color:#c8d8cc;font-size:11px;padding:4px 6px;">
+                  <option value="30" selected>30</option>
+                  <option value="60">60</option>
+                </select>
+              </div>
+            </div>
             <!-- زرار التصدير -->
             <button
               id="exportBtn"
@@ -9146,6 +9176,10 @@ If you want to offset all timestamps of a track such that the first one is zero,
         <button class="mob-nav-btn" id="mnBg" onclick="mobShow('left', 'bg')">
           <span class="mn-ico">🖼</span>
           <span>الخلفيات</span>
+        </button>
+        <button class="mob-nav-btn" id="mnAthkar" onclick="switchTab('athkar')">
+          <span class="mn-ico">📿</span>
+          <span>الأذكار</span>
         </button>
         <button class="mob-nav-btn" id="mnRight" onclick="mobShow('right', '')">
           <span class="mn-ico">🎨</span>
@@ -18042,89 +18076,25 @@ If you want to offset all timestamps of a track such that the first one is zero,
       ══════════════════════════════════════════ */
         var GALLERY_IMAGES = [
           // طبيعة
-          {
-            cat: "nature",
-            url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80",
-            label: "",
-          },
-          {
-            cat: "nature",
-            url: "https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=400&q=80",
-            label: "",
-          },
-          {
-            cat: "nature",
-            url: "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=400&q=80",
-            label: "",
-          },
-          {
-            cat: "nature",
-            url: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=400&q=80",
-            label: "",
-          },
-          {
-            cat: "nature",
-            url: "https://images.unsplash.com/photo-1518173946687-a4c8892bbd9f?w=400&q=80",
-            label: "",
-          },
-          {
-            cat: "nature",
-            url: "https://images.unsplash.com/photo-1559827291-72ee739d0d9a?w=400&q=80",
-            label: "",
-          },
+          { cat: "nature", url: "assets/bg/nature-mountain.jpg", label: "جبال" },
+          { cat: "nature", url: "assets/bg/nature-waterfall.jpg", label: "شلال" },
+          { cat: "nature", url: "assets/bg/nature-sunset.jpg", label: "غروب" },
+          { cat: "nature", url: "assets/bg/nature-lake.jpg", label: "بحيرة" },
+          { cat: "nature", url: "assets/bg/nature-desert.jpg", label: "صحراء" },
+          { cat: "nature", url: "assets/bg/nature-sea.jpg", label: "بحر" },
           // مساجد
-          {
-            cat: "mosque",
-            url: "https://images.unsplash.com/photo-1519817650390-64a93db51149?w=400&q=80",
-            label: "",
-          },
-          {
-            cat: "mosque",
-            url: "https://images.unsplash.com/photo-1592326871020-04f58c1a52f3?w=400&q=80",
-            label: "",
-          },
-          {
-            cat: "mosque",
-            url: "https://images.unsplash.com/photo-1554110838-816383ce7956?w=400&q=80",
-            label: "",
-          },
-          {
-            cat: "mosque",
-            url: "https://images.unsplash.com/photo-1581141444721-0e6f8fa8397e?w=400&q=80",
-            label: "",
-          },
+          { cat: "mosque", url: "assets/bg/mosque-1.jpg", label: "مسجد" },
+          { cat: "mosque", url: "assets/bg/mosque-2.jpg", label: "مئذنة" },
+          { cat: "mosque", url: "assets/bg/mosque-3.jpg", label: "قبة" },
+          { cat: "mosque", url: "assets/bg/mosque-4.jpg", label: "حرم" },
           // تجريدي
-          {
-            cat: "abstract",
-            url: "https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=400&q=80",
-            label: "",
-          },
-          {
-            cat: "abstract",
-            url: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=400&q=80",
-            label: "",
-          },
-          {
-            cat: "abstract",
-            url: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=400&q=80",
-            label: "",
-          },
-          {
-            cat: "abstract",
-            url: "https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?w=400&q=80",
-            label: "",
-          },
+          { cat: "abstract", url: "assets/bg/abstract-light.jpg", label: "ضوء" },
+          { cat: "abstract", url: "assets/bg/abstract-gradient.jpg", label: "تدرج" },
+          { cat: "abstract", url: "assets/bg/abstract-forest.jpg", label: "غابة" },
+          { cat: "abstract", url: "assets/bg/abstract-night.jpg", label: "ليلي" },
           // خط عربي
-          {
-            cat: "calligraphy",
-            url: "https://images.unsplash.com/photo-1558114965-eeb97aa84c3b?w=400&q=80",
-            label: "",
-          },
-          {
-            cat: "calligraphy",
-            url: "https://images.unsplash.com/photo-1551893478-d726eaf0442c?w=400&q=80",
-            label: "",
-          },
+          { cat: "calligraphy", url: "assets/bg/calligraphy-1.jpg", label: "خط" },
+          { cat: "calligraphy", url: "assets/bg/calligraphy-2.jpg", label: "زخرفة" },
         ];
 
         var _currentGalleryFilter = "all";
