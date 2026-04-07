@@ -17535,7 +17535,6 @@ If you want to offset all timestamps of a track such that the first one is zero,
         /* ── عرض البانر على جميع الأجهزة عند تحميل الصفحة ── */
         window.addEventListener("load", function () {
           if (_isInstalled()) return;
-          if (_wasDismissed()) return;
           setTimeout(_showBanner, 1000);
         });
       })();
@@ -17602,28 +17601,53 @@ If you want to offset all timestamps of a track such that the first one is zero,
           } catch (_) {}
         }
 
+        function swReady(timeoutMs) {
+          return Promise.race([
+            navigator.serviceWorker.ready,
+            new Promise(function (_, reject) {
+              setTimeout(function () { reject(new Error("SW timeout")); }, timeoutMs);
+            }),
+          ]);
+        }
+
         async function initPushNotifications() {
-          if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+          /* تحقق من دعم المتصفح */
+          if (!("serviceWorker" in navigator)) return;
+          if (!("PushManager" in window)) return;
+          if (!("Notification" in window)) return;
+          if (location.protocol !== "https:" && location.hostname !== "localhost") return;
 
-          var reg = await navigator.serviceWorker.ready;
+          var reg;
+          try {
+            reg = await swReady(8000);
+          } catch (_) {
+            return;
+          }
 
-          /* سجّل الزيارة أولاً */
+          /* سجّل الزيارة */
           await recordVisit(reg);
 
-          /* إذا رفض المستخدم من قبل، لا تسأل مجدداً */
+          /* رُفض من قبل */
           if (Notification.permission === "denied") return;
 
-          /* إذا مشترك بالفعل، لا نحتاج شيئاً */
+          /* مشترك بالفعل */
           if (localStorage.getItem("pushSubscribed") === "1") return;
 
-          /* اعرض طلب الإذن فور فتح الموقع */
-          var permission = await Notification.requestPermission();
-          if (permission === "granted") {
-            await subscribeUser(reg);
+          /* اطلب الإذن */
+          try {
+            var permission = await Notification.requestPermission();
+            if (permission === "granted") {
+              await subscribeUser(reg);
+            }
+          } catch (e) {
+            console.warn("[Push] permission error:", e);
           }
         }
 
-        window.addEventListener("load", initPushNotifications);
+        window.addEventListener("load", function () {
+          /* تأخير بسيط حتى يكتمل تحميل الصفحة أولاً */
+          setTimeout(initPushNotifications, 500);
+        });
       })();
     </script>
 
