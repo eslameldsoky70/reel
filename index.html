@@ -9917,6 +9917,9 @@ If you want to offset all timestamps of a track such that the first one is zero,
           document.getElementById("cas-reciter-name")?.value?.trim() || "";
         CSTATE.shName = elShText || (casName ? "تلاوة: " + casName : "");
         CSTATE.watermark = document.getElementById("elWm")?.textContent || "";
+        CSTATE.wmSize = parseFloat(document.getElementById("wmSizeSlider")?.value || "28");
+        CSTATE.wmOpacity = parseFloat(document.getElementById("wmOpacSlider")?.value || "28") / 100;
+        CSTATE.wmPos = document.getElementById("wmPosSelect")?.value || "bottom";
         CSTATE.color = S.color || "#fff";
         CSTATE.fontSize = S.size || 14;
         const fontMap = {
@@ -10673,11 +10676,32 @@ If you want to offset all timestamps of a track such that the first one is zero,
           }
         }
         if (CSTATE.watermark && CSTATE.showWatermark) {
-          ctx.font = `28px "Cairo", sans-serif`;
+          const wmSz = CSTATE.wmSize || 28;
+          const wmOp = CSTATE.wmOpacity != null ? CSTATE.wmOpacity : 0.28;
+          const wmPos = CSTATE.wmPos || "bottom";
+          ctx.font = `${wmSz}px "Cairo", sans-serif`;
           ctx.textAlign = "center";
           ctx.direction = "rtl";
-          ctx.fillStyle = "rgba(255,255,255,0.28)";
-          ctx.fillText(CSTATE.watermark, canvas.width / 2, canvas.height - 140);
+          ctx.fillStyle = `rgba(255,255,255,${wmOp})`;
+          ctx.shadowColor = "rgba(0,0,0,0.5)";
+          ctx.shadowBlur = 4;
+          let wmY;
+          if (wmPos === "top") {
+            wmY = wmSz + 40;
+          } else if (wmPos === "left" || wmPos === "right") {
+            wmY = canvas.height - 140;
+            ctx.textAlign = wmPos === "left" ? "right" : "left";
+          } else {
+            wmY = canvas.height - 140;
+          }
+          const wmX = wmPos === "left"
+            ? canvas.width - 20
+            : wmPos === "right"
+            ? 20
+            : canvas.width / 2;
+          ctx.fillText(CSTATE.watermark, wmX, wmY);
+          ctx.shadowBlur = 0;
+          ctx.textAlign = "center";
           ctx.direction = "ltr";
         }
         if (CSTATE.showWave) {
