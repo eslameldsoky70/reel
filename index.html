@@ -17530,25 +17530,14 @@ If you want to offset all timestamps of a track such that the first one is zero,
         window.addEventListener("beforeinstallprompt", function (e) {
           e.preventDefault();
           _deferredPrompt = e;
-          setTimeout(
-            _showBanner,
-            1000,
-          ); /* ← شيل الشرط هنا لو عايزها تظهر دايماً */
         });
 
-        /* ── iOS Safari: لا يدعم beforeinstallprompt — نعرض تعليمات يدوية ── */
+        /* ── عرض البانر على جميع الأجهزة عند تحميل الصفحة ── */
         window.addEventListener("load", function () {
-          if (_isInstalled()) return; // مثبّت بالفعل
-          var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-          var isSafari =
-            /safari/i.test(navigator.userAgent) &&
-            !/chrome|crios|fxios/i.test(navigator.userAgent);
-          if (isIOS && isSafari && !_wasDismissed()) {
-            setTimeout(_showBanner, 1500);
-          }
+          if (_isInstalled()) return;
+          if (_wasDismissed()) return;
+          setTimeout(_showBanner, 1000);
         });
-
-        /* ── ديسكتوب/أندرويد: يظهر البانر فقط عند حدث beforeinstallprompt ── */
       })();
     </script>
 
@@ -17627,13 +17616,11 @@ If you want to offset all timestamps of a track such that the first one is zero,
           /* إذا مشترك بالفعل، لا نحتاج شيئاً */
           if (localStorage.getItem("pushSubscribed") === "1") return;
 
-          /* انتظر ثلاث ثوانٍ ثم اعرض طلب الإذن */
-          setTimeout(async function () {
-            var permission = await Notification.requestPermission();
-            if (permission === "granted") {
-              await subscribeUser(reg);
-            }
-          }, 3000);
+          /* اعرض طلب الإذن فور فتح الموقع */
+          var permission = await Notification.requestPermission();
+          if (permission === "granted") {
+            await subscribeUser(reg);
+          }
         }
 
         window.addEventListener("load", initPushNotifications);
