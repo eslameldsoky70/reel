@@ -9457,6 +9457,47 @@ If you want to offset all timestamps of a track such that the first one is zero,
             تغيير
           </button>
         </div>
+        <!-- ── كونترولز التصدير ── -->
+        <div style="margin-bottom:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;display:flex;flex-direction:column;gap:8px;">
+
+          <!-- صف التبديلات -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;color:#b5c4bc;">
+              <input type="checkbox" id="athkHideFrame" checked style="accent-color:#c9973a;">
+              إخفاء الإطار
+            </label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;color:#b5c4bc;">
+              <input type="checkbox" id="athkHideStar" checked style="accent-color:#c9973a;">
+              إخفاء النجمة والخط
+            </label>
+          </div>
+
+          <!-- لون وحجم الخط -->
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <span style="font-size:11px;color:#6e8878;flex-shrink:0;">لون الخط</span>
+            <input type="color" id="athkTextColor" value="#f0ebe1"
+              style="width:32px;height:26px;border:none;background:none;cursor:pointer;padding:0;">
+            <span style="font-size:11px;color:#6e8878;flex-shrink:0;">الحجم</span>
+            <input type="range" id="athkFontSize" min="32" max="90" value="58"
+              style="flex:1;accent-color:#c9973a;min-width:80px;">
+            <span id="athkFontSizeVal" style="font-size:11px;color:#e4b55a;width:28px;flex-shrink:0;">58</span>
+          </div>
+
+          <!-- علامة مائية -->
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span style="font-size:11px;color:#6e8878;flex-shrink:0;">علامة مائية</span>
+            <input type="text" id="athkWatermark" placeholder="Islam Reels ✨" value="Islam Reels ✨"
+              style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+                     border-radius:6px;color:#c8d8cc;font-size:11px;padding:4px 8px;font-family:'Cairo',sans-serif;">
+          </div>
+        </div>
+
+        <script>
+          document.getElementById('athkFontSize').addEventListener('input', function(){
+            document.getElementById('athkFontSizeVal').textContent = this.value;
+          });
+        </script>
+
         <div style="display: flex; gap: 8px">
           <button
             onclick="exportAthkarAsImage()"
@@ -18076,25 +18117,25 @@ If you want to offset all timestamps of a track such that the first one is zero,
       ══════════════════════════════════════════ */
         var GALLERY_IMAGES = [
           // طبيعة
-          { cat: "nature", url: "assets/bg/nature-mountain.jpg", label: "جبال" },
-          { cat: "nature", url: "assets/bg/nature-waterfall.jpg", label: "شلال" },
-          { cat: "nature", url: "assets/bg/nature-sunset.jpg", label: "غروب" },
-          { cat: "nature", url: "assets/bg/nature-lake.jpg", label: "بحيرة" },
-          { cat: "nature", url: "assets/bg/nature-desert.jpg", label: "صحراء" },
-          { cat: "nature", url: "assets/bg/nature-sea.jpg", label: "بحر" },
+          { cat: "nature", url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80", label: "جبال" },
+          { cat: "nature", url: "https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=400&q=80", label: "شلال" },
+          { cat: "nature", url: "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=400&q=80", label: "غروب" },
+          { cat: "nature", url: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=400&q=80", label: "بحيرة" },
+          { cat: "nature", url: "https://images.unsplash.com/photo-1518173946687-a4c8892bbd9f?w=400&q=80", label: "صحراء" },
+          { cat: "nature", url: "https://images.unsplash.com/photo-1559827291-72ee739d0d9a?w=400&q=80", label: "بحر" },
           // مساجد
-          { cat: "mosque", url: "assets/bg/mosque-1.jpg", label: "مسجد" },
-          { cat: "mosque", url: "assets/bg/mosque-2.jpg", label: "مئذنة" },
-          { cat: "mosque", url: "assets/bg/mosque-3.jpg", label: "قبة" },
-          { cat: "mosque", url: "assets/bg/mosque-4.jpg", label: "حرم" },
+          { cat: "mosque", url: "https://images.unsplash.com/photo-1519817650390-64a93db51149?w=400&q=80", label: "مسجد" },
+          { cat: "mosque", url: "https://images.unsplash.com/photo-1592326871020-04f58c1a52f3?w=400&q=80", label: "مئذنة" },
+          { cat: "mosque", url: "https://images.unsplash.com/photo-1554110838-816383ce7956?w=400&q=80", label: "قبة" },
+          { cat: "mosque", url: "https://images.unsplash.com/photo-1581141444721-0e6f8fa8397e?w=400&q=80", label: "حرم" },
           // تجريدي
-          { cat: "abstract", url: "assets/bg/abstract-light.jpg", label: "ضوء" },
-          { cat: "abstract", url: "assets/bg/abstract-gradient.jpg", label: "تدرج" },
-          { cat: "abstract", url: "assets/bg/abstract-forest.jpg", label: "غابة" },
-          { cat: "abstract", url: "assets/bg/abstract-night.jpg", label: "ليلي" },
+          { cat: "abstract", url: "https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=400&q=80", label: "ضوء" },
+          { cat: "abstract", url: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=400&q=80", label: "تدرج" },
+          { cat: "abstract", url: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=400&q=80", label: "غابة" },
+          { cat: "abstract", url: "https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?w=400&q=80", label: "ليلي" },
           // خط عربي
-          { cat: "calligraphy", url: "assets/bg/calligraphy-1.jpg", label: "خط" },
-          { cat: "calligraphy", url: "assets/bg/calligraphy-2.jpg", label: "زخرفة" },
+          { cat: "calligraphy", url: "https://images.unsplash.com/photo-1558114965-eeb97aa84c3b?w=400&q=80", label: "خط" },
+          { cat: "calligraphy", url: "https://images.unsplash.com/photo-1551893478-d726eaf0442c?w=400&q=80", label: "زخرفة" },
         ];
 
         var _currentGalleryFilter = "all";
@@ -18906,37 +18947,49 @@ If you want to offset all timestamps of a track such that the first one is zero,
                 ctx.fillRect(0, 0, W, H);
               }
 
+              // قراءة الكونترولز
+              var hideFrame  = document.getElementById("athkHideFrame")  ? document.getElementById("athkHideFrame").checked  : false;
+              var hideStar   = document.getElementById("athkHideStar")   ? document.getElementById("athkHideStar").checked   : false;
+              var textColor  = document.getElementById("athkTextColor")  ? document.getElementById("athkTextColor").value    : "#f0ebe1";
+              var fontSize   = document.getElementById("athkFontSize")   ? parseInt(document.getElementById("athkFontSize").value) : 58;
+              var watermark  = document.getElementById("athkWatermark")  ? document.getElementById("athkWatermark").value.trim() : "Islam Reels ✨";
+
               // 3. إطار ذهبي مزدوج
-              ctx.strokeStyle = "rgba(201,151,58,.55)";
-              ctx.lineWidth = 6;
-              ctx.strokeRect(36, 36, W - 72, H - 72);
-              ctx.strokeStyle = "rgba(201,151,58,.2)";
-              ctx.lineWidth = 2;
-              ctx.strokeRect(48, 48, W - 96, H - 96);
+              if (!hideFrame) {
+                ctx.strokeStyle = "rgba(201,151,58,.55)";
+                ctx.lineWidth = 6;
+                ctx.strokeRect(36, 36, W - 72, H - 72);
+                ctx.strokeStyle = "rgba(201,151,58,.2)";
+                ctx.lineWidth = 2;
+                ctx.strokeRect(48, 48, W - 96, H - 96);
+              }
 
-              // 4. نجمة زخرفية
-              ctx.fillStyle = "#c9973a";
-              ctx.font = "bold 90px serif";
-              ctx.textAlign = "center";
-              ctx.textBaseline = "middle";
-              ctx.direction = "ltr";
-              ctx.fillText("✦", W / 2, 190);
-
-              // 5. خط فاصل
+              // خط فاصل (مشترك)
               var gx = ctx.createLinearGradient(120, 0, W - 120, 0);
               gx.addColorStop(0, "rgba(201,151,58,0)");
               gx.addColorStop(0.5, "rgba(201,151,58,.6)");
               gx.addColorStop(1, "rgba(201,151,58,0)");
-              ctx.strokeStyle = gx;
-              ctx.lineWidth = 1.5;
-              ctx.beginPath();
-              ctx.moveTo(120, 270);
-              ctx.lineTo(W - 120, 270);
-              ctx.stroke();
+
+              // 4. نجمة زخرفية + 5. خط فاصل علوي
+              if (!hideStar) {
+                ctx.fillStyle = "#c9973a";
+                ctx.font = "bold 90px serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.direction = "ltr";
+                ctx.fillText("✦", W / 2, 190);
+
+                ctx.strokeStyle = gx;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(120, 270);
+                ctx.lineTo(W - 120, 270);
+                ctx.stroke();
+              }
 
               // 6. نص الذكر
-              ctx.fillStyle = "#f0ebe1";
-              var info = _drawArabicText(ctx, sel.text, W / 2, W - 140, 58, 94);
+              ctx.fillStyle = textColor;
+              var info = _drawArabicText(ctx, sel.text, W / 2, W - 140, fontSize, Math.round(fontSize * 1.62));
               var totalTH = info.lines.length * info.lh;
               var startY = H / 2 - 40 - totalTH / 2 + info.lh / 2;
               for (var l = 0; l < info.lines.length; l++) {
@@ -18963,11 +19016,15 @@ If you want to offset all timestamps of a track such that the first one is zero,
                 H - 210,
               );
 
-              // 9. شعار
-              ctx.fillStyle = "rgba(255,255,255,.22)";
-              ctx.font = "26px 'Cairo', sans-serif";
-              ctx.direction = "ltr";
-              ctx.fillText("Islam Reels  ✨", W / 2, H - 110);
+              // 9. علامة مائية
+              if (watermark) {
+                ctx.fillStyle = "rgba(255,255,255,.22)";
+                ctx.font = "26px 'Cairo', sans-serif";
+                ctx.direction = "ltr";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(watermark, W / 2, H - 110);
+              }
 
               // 10. تحميل
               c.toBlob(function (blob) {
