@@ -21,6 +21,7 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <!-- PWA -->
+    <link rel="manifest" href="/islam-reels/manifest.json" />
     <meta name="theme-color" content="#c9973a" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -17535,27 +17536,110 @@ If you want to offset all timestamps of a track such that the first one is zero,
           ); /* ← شيل الشرط هنا لو عايزها تظهر دايماً */
         });
 
-        /* ── iOS Safari: لا يدعم beforeinstallprompt ── */
+        /* ── iOS Safari: لا يدعم beforeinstallprompt — نعرض تعليمات يدوية ── */
         window.addEventListener("load", function () {
-          var deviceType = _getDeviceType();
-          var isIOS = deviceType === "ios";
+          if (_isInstalled()) return; // مثبّت بالفعل
+          var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
           var isSafari =
             /safari/i.test(navigator.userAgent) &&
             !/chrome|crios|fxios/i.test(navigator.userAgent);
-
-          /* ← شيل الشرط هنا لو عايزها تظهر دايماً على iOS */
-          if (isIOS && isSafari) {
-            setTimeout(_showBanner, 1000);
+          if (isIOS && isSafari && !_wasDismissed()) {
+            setTimeout(_showBanner, 1500);
           }
-
-          /* ← السطر ده يخلّيها تظهر على كل الأجهزة للتجربة */
-          setTimeout(_showBanner, 1000);
         });
 
-        /* ── ديسكتوب / تابلت: انتظر beforeinstallprompt ── */
-        /* سيُظهر تلقائياً إذا دعم المتصفح التثبيت */
+        /* ── ديسكتوب/أندرويد: يظهر البانر فقط عند حدث beforeinstallprompt ── */
       })();
     </script>
+
+    <!-- ══════════════════════════════════════════
+         Push Notifications — تذكير عدم الزيارة
+    ══════════════════════════════════════════ -->
+    <script>
+      (function () {
+        "use strict";
+
+        var API_BASE = "/api";
+
+        /* ── طلب VAPID public key من السيرفر ── */
+        function urlB64ToUint8Array(base64String) {
+          var padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+          var base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+          var rawData = atob(base64);
+          var arr = new Uint8Array(rawData.length);
+          for (var i = 0; i < rawData.length; i++) arr[i] = rawData.charCodeAt(i);
+          return arr;
+        }
+
+        async function getVapidKey() {
+          try {
+            var r = await fetch(API_BASE + "/push/vapid-public-key");
+            if (!r.ok) return null;
+            var d = await r.json();
+            return d.key || null;
+          } catch (_) { return null; }
+        }
+
+        async function subscribeUser(reg) {
+          var vapidKey = await getVapidKey();
+          if (!vapidKey) return;
+          try {
+            var sub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlB64ToUint8Array(vapidKey),
+            });
+            await fetch(API_BASE + "/push/subscribe", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ subscription: sub }),
+            });
+            localStorage.setItem("pushSubscribed", "1");
+            localStorage.setItem("pushEndpoint", sub.endpoint);
+          } catch (_) {}
+        }
+
+        async function recordVisit(reg) {
+          var endpoint = localStorage.getItem("pushEndpoint");
+          if (!endpoint) return;
+          try {
+            /* تحقق أن الاشتراك لا يزال نشطاً */
+            var existing = await reg.pushManager.getSubscription();
+            if (!existing) { localStorage.removeItem("pushSubscribed"); localStorage.removeItem("pushEndpoint"); return; }
+            await fetch(API_BASE + "/push/visit", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ endpoint }),
+            });
+          } catch (_) {}
+        }
+
+        async function initPushNotifications() {
+          if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+
+          var reg = await navigator.serviceWorker.ready;
+
+          /* سجّل الزيارة أولاً */
+          await recordVisit(reg);
+
+          /* إذا رفض المستخدم من قبل، لا تسأل مجدداً */
+          if (Notification.permission === "denied") return;
+
+          /* إذا مشترك بالفعل، لا نحتاج شيئاً */
+          if (localStorage.getItem("pushSubscribed") === "1") return;
+
+          /* انتظر ثلاث ثوانٍ ثم اعرض طلب الإذن */
+          setTimeout(async function () {
+            var permission = await Notification.requestPermission();
+            if (permission === "granted") {
+              await subscribeUser(reg);
+            }
+          }, 3000);
+        }
+
+        window.addEventListener("load", initPushNotifications);
+      })();
+    </script>
+
     <!-- ══════════════════════════════════════════
          الخصائص الجديدة v2 - JavaScript
     ══════════════════════════════════════════ -->
