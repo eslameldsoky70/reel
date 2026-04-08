@@ -5234,18 +5234,14 @@ If you want to offset all timestamps of a track such that the first one is zero,
           overflow: hidden;
         }
         .app {
-          grid-template-rows: calc(50px + env(safe-area-inset-top, 0px)) 1fr calc(56px + env(safe-area-inset-bottom, 0px));
+          grid-template-rows: 50px 1fr 56px;
           height: 100dvh;
         }
 
-        /* ── Top bar — يحسب شريط الحالة (notch/dynamic island) ── */
+        /* ── Top bar ── */
         .top {
-          padding-top: env(safe-area-inset-top, 0px);
-          padding-left: 10px;
-          padding-right: 10px;
+          padding: 0 10px;
           gap: 5px;
-          align-items: center;
-          box-sizing: border-box;
         }
         .logo-text {
           font-size: 14px;
@@ -8814,26 +8810,65 @@ If you want to offset all timestamps of a track such that the first one is zero,
             </div>
 
             <!-- custom preset row -->
-            <div id="customPresetRow" style="display:none;padding:8px;background:rgba(255,255,255,.03);
+            <div id="customPresetRow" style="display:none;padding:10px;background:rgba(255,255,255,.03);
                  border:1px solid rgba(255,255,255,.08);border-radius:8px;margin-bottom:10px;">
-              <div style="font-size:10px;color:#6e8878;margin-bottom:6px;">إعدادات مخصصة</div>
-              <div style="display:flex;gap:6px;align-items:center;">
-                <label style="font-size:10px;color:#b5c4bc;flex-shrink:0;">Bitrate</label>
-                <select id="s-qual" style="flex:1;background:#0c1810;border:1px solid rgba(255,255,255,.12);
-                        border-radius:6px;color:#c8d8cc;font-size:11px;padding:4px 6px;">
-                  <option value="2000000">2 Mbps</option>
-                  <option value="4000000" selected>4 Mbps</option>
-                  <option value="6000000">6 Mbps</option>
-                  <option value="8000000">8 Mbps</option>
-                  <option value="16000000">16 Mbps</option>
-                </select>
-                <label style="font-size:10px;color:#b5c4bc;flex-shrink:0;">FPS</label>
-                <select id="s-fps" style="width:60px;background:#0c1810;border:1px solid rgba(255,255,255,.12);
-                        border-radius:6px;color:#c8d8cc;font-size:11px;padding:4px 6px;">
-                  <option value="30" selected>30</option>
-                  <option value="60">60</option>
-                </select>
+              <div style="font-size:10px;color:#6e8878;margin-bottom:8px;">⚙️ إعدادات مخصصة</div>
+
+              <!-- العرض والارتفاع -->
+              <div style="display:flex;gap:6px;margin-bottom:6px;">
+                <div style="flex:1;">
+                  <div style="font-size:9px;color:#6e8878;margin-bottom:3px;">العرض (px)</div>
+                  <input id="cpW" type="number" value="1080" min="240" max="3840" step="1"
+                    onchange="updateCustomPreset()"
+                    style="width:100%;background:#0c1810;border:1px solid rgba(255,255,255,.12);
+                           border-radius:6px;color:#c8d8cc;font-size:11px;padding:5px 7px;box-sizing:border-box;"/>
+                </div>
+                <div style="flex:1;">
+                  <div style="font-size:9px;color:#6e8878;margin-bottom:3px;">الارتفاع (px)</div>
+                  <input id="cpH" type="number" value="1920" min="240" max="3840" step="1"
+                    onchange="updateCustomPreset()"
+                    style="width:100%;background:#0c1810;border:1px solid rgba(255,255,255,.12);
+                           border-radius:6px;color:#c8d8cc;font-size:11px;padding:5px 7px;box-sizing:border-box;"/>
+                </div>
               </div>
+
+              <!-- FPS والـ Bitrate -->
+              <div style="display:flex;gap:6px;margin-bottom:8px;">
+                <div style="flex:1;">
+                  <div style="font-size:9px;color:#6e8878;margin-bottom:3px;">FPS</div>
+                  <select id="cpFps" onchange="updateCustomPreset()"
+                    style="width:100%;background:#0c1810;border:1px solid rgba(255,255,255,.12);
+                           border-radius:6px;color:#c8d8cc;font-size:11px;padding:5px 6px;">
+                    <option value="24">24</option>
+                    <option value="30" selected>30</option>
+                    <option value="60">60</option>
+                  </select>
+                </div>
+                <div style="flex:1;">
+                  <div style="font-size:9px;color:#6e8878;margin-bottom:3px;">Bitrate (Mbps)</div>
+                  <input id="cpBr" type="number" value="4" min="0.5" max="30" step="0.5"
+                    onchange="updateCustomPreset()"
+                    style="width:100%;background:#0c1810;border:1px solid rgba(255,255,255,.12);
+                           border-radius:6px;color:#c8d8cc;font-size:11px;padding:5px 7px;box-sizing:border-box;"/>
+                </div>
+              </div>
+
+              <!-- اختصارات سريعة -->
+              <div style="font-size:9px;color:#6e8878;margin-bottom:4px;">اختصارات سريعة:</div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                <button onclick="_setCustomQuick(480,854,30,1.2)" style="font-size:9px;padding:3px 7px;background:rgba(201,151,58,.1);border:1px solid rgba(201,151,58,.3);border-radius:4px;color:#c9973a;cursor:pointer;">480p</button>
+                <button onclick="_setCustomQuick(720,1280,30,2)" style="font-size:9px;padding:3px 7px;background:rgba(201,151,58,.1);border:1px solid rgba(201,151,58,.3);border-radius:4px;color:#c9973a;cursor:pointer;">720p</button>
+                <button onclick="_setCustomQuick(1080,1920,30,4)" style="font-size:9px;padding:3px 7px;background:rgba(201,151,58,.1);border:1px solid rgba(201,151,58,.3);border-radius:4px;color:#c9973a;cursor:pointer;">1080p</button>
+                <button onclick="_setCustomQuick(1080,1920,60,6)" style="font-size:9px;padding:3px 7px;background:rgba(201,151,58,.1);border:1px solid rgba(201,151,58,.3);border-radius:4px;color:#c9973a;cursor:pointer;">1080p60</button>
+              </div>
+
+              <!-- hidden selects للتوافق مع الكود القديم -->
+              <select id="s-qual" style="display:none;">
+                <option value="4000000" selected>4 Mbps</option>
+              </select>
+              <select id="s-fps" style="display:none;">
+                <option value="30" selected>30</option>
+              </select>
             </div>
             <!-- زرار التصدير -->
             <button
@@ -14872,6 +14907,16 @@ If you want to offset all timestamps of a track such that the first one is zero,
           bitrate: 6_000_000,
           desc: "يوتيوب بـ 60 إطار/ثانية.",
         },
+        sh_480: {
+          label: "شورتس خفيف",
+          icon: "📱",
+          tag: "480p",
+          w: 480,
+          h: 854,
+          fps: 30,
+          bitrate: 1_200_000,
+          desc: "حجم ملف صغير جداً، مناسب للإنترنت البطيء.",
+        },
         sh_eco: {
           label: "شورتس اقتصادي",
           icon: "⚡",
@@ -15208,18 +15253,40 @@ If you want to offset all timestamps of a track such that the first one is zero,
         const w = parseInt(wEl.value) || 1080,
           h = parseInt(hEl.value) || 1920,
           fps = parseInt(fEl.value) || 30,
-          br = parseInt(bEl.value) || 8;
+          br = parseFloat(bEl.value) || 4;
         EXPORT_PRESETS.custom.w = w;
         EXPORT_PRESETS.custom.h = h;
         EXPORT_PRESETS.custom.fps = fps;
         EXPORT_PRESETS.custom.bitrate = br * 1_000_000;
         QUALITY_PRESETS._active = { w, h, fps: fps, bitrate: br * 1_000_000 };
+        // تحديث الـ hidden selects للتوافق مع الكود القديم
+        const squal = document.getElementById("s-qual");
+        const sfps  = document.getElementById("s-fps");
+        if (squal) squal.innerHTML = `<option value="${Math.round(br*1_000_000)}" selected>${br} Mbps</option>`;
+        if (sfps)  sfps.innerHTML  = `<option value="${fps}" selected>${fps}</option>`;
+        // تحديث tag الـ preset trigger
+        const tag = document.getElementById("presetTriggerTag");
+        if (tag) tag.textContent = `${w}×${h} · ${fps}fps · ${br}Mbps`;
         canvas.width = 540;
         canvas.height = 960;
         _gradCache = null;
         _mtCache.clear();
         markCstateDirty();
       }
+
+      // اختصار سريع لضبط الـ custom preset
+      window._setCustomQuick = function(w, h, fps, br) {
+        const wEl = document.getElementById("cpW"),
+          hEl = document.getElementById("cpH"),
+          fEl = document.getElementById("cpFps"),
+          bEl = document.getElementById("cpBr");
+        if (wEl) wEl.value = w;
+        if (hEl) hEl.value = h;
+        if (fEl) fEl.value = fps;
+        if (bEl) bEl.value = br;
+        updateCustomPreset();
+        if (typeof toast$ === "function") toast$("✓ " + w + "×" + h + " · " + fps + "fps · " + br + "Mbps");
+      };
 
       // ── بناء قائمة الـ presets ──
       function buildPresetMenu() {
@@ -17426,9 +17493,7 @@ If you want to offset all timestamps of a track such that the first one is zero,
         function _isInstalled() {
           return (
             window.matchMedia("(display-mode: standalone)").matches ||
-            window.matchMedia("(display-mode: fullscreen)").matches ||
-            window.navigator.standalone === true ||
-            document.referrer.startsWith("android-app://")
+            window.navigator.standalone === true
           );
         }
 
@@ -17510,7 +17575,6 @@ If you want to offset all timestamps of a track such that the first one is zero,
         /* ── عرض البانر ── */
         function _showBanner() {
           if (_shown) return;
-          if (_wasDismissed()) return;
           _shown = true;
           var deviceType = _getDeviceType();
           _customizeForDevice(deviceType);
@@ -17571,17 +17635,10 @@ If you want to offset all timestamps of a track such that the first one is zero,
           _deferredPrompt = e;
         });
 
-        /* ── إخفاء البانر فوراً إذا كان التطبيق مثبّتاً ── */
-        if (_isInstalled()) {
-          var _b = document.getElementById("pwaBanner");
-          if (_b) _b.style.display = "none";
-        }
-
-        /* ── عرض البانر عند تحميل الصفحة ── */
+        /* ── عرض البانر على جميع الأجهزة عند تحميل الصفحة ── */
         window.addEventListener("load", function () {
           if (_isInstalled()) return;
-          if (_wasDismissed()) return;
-          setTimeout(_showBanner, 300);
+          setTimeout(_showBanner, 1000);
         });
       })();
     </script>
@@ -17659,25 +17716,16 @@ If you want to offset all timestamps of a track such that the first one is zero,
         async function initPushNotifications() {
           /* تحقق من دعم المتصفح */
           if (!("serviceWorker" in navigator)) return;
+          if (!("PushManager" in window)) return;
+          if (!("Notification" in window)) return;
           if (location.protocol !== "https:" && location.hostname !== "localhost") return;
-
-          /* iOS في المتصفح لا يدعم Web Push — نعرض إشعاراً داخلياً بديلاً */
-          if (!("PushManager" in window) || !("Notification" in window)) {
-            /* فقط لو شغّال كـ PWA مثبّت على iOS */
-            if (window.navigator.standalone && !localStorage.getItem("iosNoticeShown")) {
-              localStorage.setItem("iosNoticeShown", "1");
-              setTimeout(function () {
-                if (typeof toast$ === "function")
-                  toast$("🔔 فعّل الإشعارات من إعدادات التطبيق");
-              }, 2500);
-            }
-            return;
-          }
 
           var reg;
           try {
-            reg = await swReady(6000);
-          } catch (_) { return; }
+            reg = await swReady(8000);
+          } catch (_) {
+            return;
+          }
 
           /* سجّل الزيارة */
           await recordVisit(reg);
@@ -17688,7 +17736,7 @@ If you want to offset all timestamps of a track such that the first one is zero,
           /* مشترك بالفعل */
           if (localStorage.getItem("pushSubscribed") === "1") return;
 
-          /* اطلب الإذن — لازم يكون بعد تفاعل المستخدم على بعض المتصفحات */
+          /* اطلب الإذن */
           try {
             var permission = await Notification.requestPermission();
             if (permission === "granted") {
@@ -17700,8 +17748,8 @@ If you want to offset all timestamps of a track such that the first one is zero,
         }
 
         window.addEventListener("load", function () {
-          /* تأخير كافٍ حتى يكتمل تسجيل Service Worker على الموبايل */
-          setTimeout(initPushNotifications, 3500);
+          /* تأخير بسيط حتى يكتمل تحميل الصفحة أولاً */
+          setTimeout(initPushNotifications, 500);
         });
       })();
     </script>
