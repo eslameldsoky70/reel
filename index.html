@@ -17422,7 +17422,9 @@ If you want to offset all timestamps of a track such that the first one is zero,
         function _isInstalled() {
           return (
             window.matchMedia("(display-mode: standalone)").matches ||
-            window.navigator.standalone === true
+            window.matchMedia("(display-mode: fullscreen)").matches ||
+            window.navigator.standalone === true ||
+            document.referrer.startsWith("android-app://")
           );
         }
 
@@ -17504,6 +17506,7 @@ If you want to offset all timestamps of a track such that the first one is zero,
         /* ── عرض البانر ── */
         function _showBanner() {
           if (_shown) return;
+          if (_wasDismissed()) return;
           _shown = true;
           var deviceType = _getDeviceType();
           _customizeForDevice(deviceType);
@@ -17564,10 +17567,21 @@ If you want to offset all timestamps of a track such that the first one is zero,
           _deferredPrompt = e;
         });
 
+        /* ── إخفاء البانر فوراً إذا كان التطبيق مثبّتاً (standalone) ── */
+        (function () {
+          if (_isInstalled()) {
+            var banner = document.getElementById("pwaBanner");
+            if (banner) {
+              banner.style.display = "none";
+            }
+          }
+        })();
+
         /* ── عرض البانر على جميع الأجهزة عند تحميل الصفحة ── */
         window.addEventListener("load", function () {
           if (_isInstalled()) return;
-          setTimeout(_showBanner, 1000);
+          if (_wasDismissed()) return;
+          setTimeout(_showBanner, 400);
         });
       })();
     </script>
@@ -17645,13 +17659,20 @@ If you want to offset all timestamps of a track such that the first one is zero,
         async function initPushNotifications() {
           /* تحقق من دعم المتصفح */
           if (!("serviceWorker" in navigator)) return;
-          if (!("PushManager" in window)) return;
-          if (!("Notification" in window)) return;
+          if (!("PushManager" in window)) {
+            /* iOS Safari في المتصفح لا يدعم Push — نُظهر إشعاراً داخلياً بدلاً من ذلك */
+            _showInAppNoticeIfNeeded();
+            return;
+          }
+          if (!("Notification" in window)) {
+            _showInAppNoticeIfNeeded();
+            return;
+          }
           if (location.protocol !== "https:" && location.hostname !== "localhost") return;
 
           var reg;
           try {
-            reg = await swReady(8000);
+            reg = await swReady(5000);
           } catch (_) {
             return;
           }
@@ -17665,7 +17686,7 @@ If you want to offset all timestamps of a track such that the first one is zero,
           /* مشترك بالفعل */
           if (localStorage.getItem("pushSubscribed") === "1") return;
 
-          /* اطلب الإذن */
+          /* اطلب الإذن — يجب أن يكون داخل حدث مستخدم على بعض المتصفحات */
           try {
             var permission = await Notification.requestPermission();
             if (permission === "granted") {
@@ -17676,9 +17697,22 @@ If you want to offset all timestamps of a track such that the first one is zero,
           }
         }
 
+        /* ── إشعار داخل التطبيق لأجهزة iOS التي لا تدعم Push Web ── */
+        function _showInAppNoticeIfNeeded() {
+          /* فقط إذا كان التطبيق مثبّتاً كـ PWA على iOS */
+          if (!window.navigator.standalone) return;
+          if (localStorage.getItem("iosNoticeShown")) return;
+          localStorage.setItem("iosNoticeShown", "1");
+          if (typeof toast$ === "function") {
+            setTimeout(function () {
+              toast$("🔔 فعّل الإشعارات من إعدادات التطبيق");
+            }, 2000);
+          }
+        }
+
         window.addEventListener("load", function () {
-          /* تأخير بسيط حتى يكتمل تحميل الصفحة أولاً */
-          setTimeout(initPushNotifications, 500);
+          /* تأخير كافٍ حتى يكتمل تسجيل Service Worker — خاصة على الموبايل */
+          setTimeout(initPushNotifications, 3000);
         });
       })();
     </script>
