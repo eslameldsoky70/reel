@@ -8810,26 +8810,65 @@ If you want to offset all timestamps of a track such that the first one is zero,
             </div>
 
             <!-- custom preset row -->
-            <div id="customPresetRow" style="display:none;padding:8px;background:rgba(255,255,255,.03);
+            <div id="customPresetRow" style="display:none;padding:10px;background:rgba(255,255,255,.03);
                  border:1px solid rgba(255,255,255,.08);border-radius:8px;margin-bottom:10px;">
-              <div style="font-size:10px;color:#6e8878;margin-bottom:6px;">إعدادات مخصصة</div>
-              <div style="display:flex;gap:6px;align-items:center;">
-                <label style="font-size:10px;color:#b5c4bc;flex-shrink:0;">Bitrate</label>
-                <select id="s-qual" style="flex:1;background:#0c1810;border:1px solid rgba(255,255,255,.12);
-                        border-radius:6px;color:#c8d8cc;font-size:11px;padding:4px 6px;">
-                  <option value="2000000">2 Mbps</option>
-                  <option value="4000000" selected>4 Mbps</option>
-                  <option value="6000000">6 Mbps</option>
-                  <option value="8000000">8 Mbps</option>
-                  <option value="16000000">16 Mbps</option>
-                </select>
-                <label style="font-size:10px;color:#b5c4bc;flex-shrink:0;">FPS</label>
-                <select id="s-fps" style="width:60px;background:#0c1810;border:1px solid rgba(255,255,255,.12);
-                        border-radius:6px;color:#c8d8cc;font-size:11px;padding:4px 6px;">
-                  <option value="30" selected>30</option>
-                  <option value="60">60</option>
-                </select>
+              <div style="font-size:10px;color:#6e8878;margin-bottom:8px;">⚙️ إعدادات مخصصة</div>
+
+              <!-- العرض والارتفاع -->
+              <div style="display:flex;gap:6px;margin-bottom:6px;">
+                <div style="flex:1;">
+                  <div style="font-size:9px;color:#6e8878;margin-bottom:3px;">العرض (px)</div>
+                  <input id="cpW" type="number" value="1080" min="240" max="3840" step="1"
+                    onchange="updateCustomPreset()"
+                    style="width:100%;background:#0c1810;border:1px solid rgba(255,255,255,.12);
+                           border-radius:6px;color:#c8d8cc;font-size:11px;padding:5px 7px;box-sizing:border-box;"/>
+                </div>
+                <div style="flex:1;">
+                  <div style="font-size:9px;color:#6e8878;margin-bottom:3px;">الارتفاع (px)</div>
+                  <input id="cpH" type="number" value="1920" min="240" max="3840" step="1"
+                    onchange="updateCustomPreset()"
+                    style="width:100%;background:#0c1810;border:1px solid rgba(255,255,255,.12);
+                           border-radius:6px;color:#c8d8cc;font-size:11px;padding:5px 7px;box-sizing:border-box;"/>
+                </div>
               </div>
+
+              <!-- FPS والـ Bitrate -->
+              <div style="display:flex;gap:6px;margin-bottom:8px;">
+                <div style="flex:1;">
+                  <div style="font-size:9px;color:#6e8878;margin-bottom:3px;">FPS</div>
+                  <select id="cpFps" onchange="updateCustomPreset()"
+                    style="width:100%;background:#0c1810;border:1px solid rgba(255,255,255,.12);
+                           border-radius:6px;color:#c8d8cc;font-size:11px;padding:5px 6px;">
+                    <option value="24">24</option>
+                    <option value="30" selected>30</option>
+                    <option value="60">60</option>
+                  </select>
+                </div>
+                <div style="flex:1;">
+                  <div style="font-size:9px;color:#6e8878;margin-bottom:3px;">Bitrate (Mbps)</div>
+                  <input id="cpBr" type="number" value="4" min="0.5" max="30" step="0.5"
+                    onchange="updateCustomPreset()"
+                    style="width:100%;background:#0c1810;border:1px solid rgba(255,255,255,.12);
+                           border-radius:6px;color:#c8d8cc;font-size:11px;padding:5px 7px;box-sizing:border-box;"/>
+                </div>
+              </div>
+
+              <!-- اختصارات سريعة -->
+              <div style="font-size:9px;color:#6e8878;margin-bottom:4px;">اختصارات سريعة:</div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                <button onclick="_setCustomQuick(480,854,30,1.2)" style="font-size:9px;padding:3px 7px;background:rgba(201,151,58,.1);border:1px solid rgba(201,151,58,.3);border-radius:4px;color:#c9973a;cursor:pointer;">480p</button>
+                <button onclick="_setCustomQuick(720,1280,30,2)" style="font-size:9px;padding:3px 7px;background:rgba(201,151,58,.1);border:1px solid rgba(201,151,58,.3);border-radius:4px;color:#c9973a;cursor:pointer;">720p</button>
+                <button onclick="_setCustomQuick(1080,1920,30,4)" style="font-size:9px;padding:3px 7px;background:rgba(201,151,58,.1);border:1px solid rgba(201,151,58,.3);border-radius:4px;color:#c9973a;cursor:pointer;">1080p</button>
+                <button onclick="_setCustomQuick(1080,1920,60,6)" style="font-size:9px;padding:3px 7px;background:rgba(201,151,58,.1);border:1px solid rgba(201,151,58,.3);border-radius:4px;color:#c9973a;cursor:pointer;">1080p60</button>
+              </div>
+
+              <!-- hidden selects للتوافق مع الكود القديم -->
+              <select id="s-qual" style="display:none;">
+                <option value="4000000" selected>4 Mbps</option>
+              </select>
+              <select id="s-fps" style="display:none;">
+                <option value="30" selected>30</option>
+              </select>
             </div>
             <!-- زرار التصدير -->
             <button
@@ -10631,7 +10670,7 @@ If you want to offset all timestamps of a track such that the first one is zero,
         // 3. حساب مركز النص الأمثل
         //    المنطقة المتاحة: من أسفل الهلال (topPad) لأعلى الموجة (waveTop)
         const topPad = 135; // أسفل الهلال / النجوم
-        const waveTop = H - 330; // مساحة كافية فوق الموجة الجديدة (H-195) + الاسم + هامش
+        const waveTop = H - 210; // قاع الموجة
         // أقصى مركز ممكن بحيث تكون كتلة المعلومات فوق الموجة
         const maxCY = waveTop - textH / 2 - infoGap - totalInfoH;
         // أدنى مركز ممكن بحيث لا يتجاوز النص أعلى الشاشة
@@ -10696,10 +10735,10 @@ If you want to offset all timestamps of a track such that the first one is zero,
           if (wmPos === "top") {
             wmY = wmSz + 40;
           } else if (wmPos === "left" || wmPos === "right") {
-            wmY = canvas.height - 140;
+            wmY = canvas.height - 80;
             ctx.textAlign = wmPos === "left" ? "right" : "left";
           } else {
-            wmY = canvas.height - 140;
+            wmY = canvas.height - 80;
           }
           const wmX = wmPos === "left"
             ? canvas.width - 20
@@ -10718,7 +10757,7 @@ If you want to offset all timestamps of a track such that the first one is zero,
             gap = 10;
           const totalW = bars * (barW + gap);
           let bx = W / 2 - totalW / 2;
-          const baseY = H - 195;
+          const baseY = H - 210;
           for (let b = 0; b < bars; b++) {
             const amp = 0.5 + 0.5 * Math.sin(CSTATE.wavePhase + b * 0.38);
             const bh = 8 + amp * 55;
@@ -10732,7 +10771,7 @@ If you want to offset all timestamps of a track such that the first one is zero,
             bx += barW + gap;
           }
         }
-        // ── اسم القارئ تحت الموجة ──
+        // ── اسم القارئ تحت الموجة دائماً (H-310 هو قاع الموجة، +32 للمسافة) ──
         if (CSTATE.shName && CSTATE.showReciterName) {
           ctx.font = `26px "Cairo", sans-serif`;
           ctx.textAlign = "center";
@@ -10740,7 +10779,7 @@ If you want to offset all timestamps of a track such that the first one is zero,
           ctx.fillStyle = "rgba(140,190,160,0.7)";
           ctx.shadowColor = "rgba(0,0,0,0.5)";
           ctx.shadowBlur = 6;
-          ctx.fillText(CSTATE.shName, W / 2, H - 152);
+          ctx.fillText(CSTATE.shName, W / 2, H - 170);
           ctx.shadowBlur = 0;
           ctx.direction = "ltr";
         }
@@ -14868,6 +14907,16 @@ If you want to offset all timestamps of a track such that the first one is zero,
           bitrate: 6_000_000,
           desc: "يوتيوب بـ 60 إطار/ثانية.",
         },
+        sh_480: {
+          label: "شورتس خفيف",
+          icon: "📱",
+          tag: "480p",
+          w: 480,
+          h: 854,
+          fps: 30,
+          bitrate: 1_200_000,
+          desc: "حجم ملف صغير جداً، مناسب للإنترنت البطيء.",
+        },
         sh_eco: {
           label: "شورتس اقتصادي",
           icon: "⚡",
@@ -15204,18 +15253,40 @@ If you want to offset all timestamps of a track such that the first one is zero,
         const w = parseInt(wEl.value) || 1080,
           h = parseInt(hEl.value) || 1920,
           fps = parseInt(fEl.value) || 30,
-          br = parseInt(bEl.value) || 8;
+          br = parseFloat(bEl.value) || 4;
         EXPORT_PRESETS.custom.w = w;
         EXPORT_PRESETS.custom.h = h;
         EXPORT_PRESETS.custom.fps = fps;
         EXPORT_PRESETS.custom.bitrate = br * 1_000_000;
         QUALITY_PRESETS._active = { w, h, fps: fps, bitrate: br * 1_000_000 };
+        // تحديث الـ hidden selects للتوافق مع الكود القديم
+        const squal = document.getElementById("s-qual");
+        const sfps  = document.getElementById("s-fps");
+        if (squal) squal.innerHTML = `<option value="${Math.round(br*1_000_000)}" selected>${br} Mbps</option>`;
+        if (sfps)  sfps.innerHTML  = `<option value="${fps}" selected>${fps}</option>`;
+        // تحديث tag الـ preset trigger
+        const tag = document.getElementById("presetTriggerTag");
+        if (tag) tag.textContent = `${w}×${h} · ${fps}fps · ${br}Mbps`;
         canvas.width = 540;
         canvas.height = 960;
         _gradCache = null;
         _mtCache.clear();
         markCstateDirty();
       }
+
+      // اختصار سريع لضبط الـ custom preset
+      window._setCustomQuick = function(w, h, fps, br) {
+        const wEl = document.getElementById("cpW"),
+          hEl = document.getElementById("cpH"),
+          fEl = document.getElementById("cpFps"),
+          bEl = document.getElementById("cpBr");
+        if (wEl) wEl.value = w;
+        if (hEl) hEl.value = h;
+        if (fEl) fEl.value = fps;
+        if (bEl) bEl.value = br;
+        updateCustomPreset();
+        if (typeof toast$ === "function") toast$("✓ " + w + "×" + h + " · " + fps + "fps · " + br + "Mbps");
+      };
 
       // ── بناء قائمة الـ presets ──
       function buildPresetMenu() {
