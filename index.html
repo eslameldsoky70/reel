@@ -11488,12 +11488,33 @@ If you want to offset all timestamps of a track such that the first one is zero,
           window._verseWordList = vd.wordList || null;
         }
         currentChunkIdx = 0;
+
+        // ── تقسيم الترجمة بنسبة كلمات كل مقطع ──
+        const _needTrans = !!window._translationEnabled;
+        const _fullEn = _needTrans ? (vd.enText || "") : "";
+        window._fullEnTranslation = _fullEn;
+        if (_fullEn && verseChunks.length > 1) {
+          const enWords = _fullEn.trim().split(/\s+/).filter(Boolean);
+          const totalAr = verseChunks.reduce((s, c) => s + c.words.length, 0);
+          let enIdx = 0;
+          window._chunkTranslations = verseChunks.map((ch, ci) => {
+            const ratio = ch.words.length / totalAr;
+            let count = (ci === verseChunks.length - 1)
+              ? enWords.length - enIdx
+              : Math.round(ratio * enWords.length);
+            count = Math.max(1, count);
+            const slice = enWords.slice(enIdx, enIdx + count).join(" ");
+            enIdx = Math.min(enIdx + count, enWords.length);
+            return slice;
+          });
+        } else {
+          window._chunkTranslations = verseChunks.map(() => _fullEn);
+        }
+
         showChunk(0, true);
         markCstateDirty();
-        // تعيين الترجمة مباشرةً في CSTATE لضمان ظهورها في التصدير
-        const _needTrans = !!window._translationEnabled;
-        CSTATE.translation = _needTrans ? vd.enText || "" : "";
-        // تحديث المتغير العام على window حتى يراه syncCSTATE
+        // تعيين الترجمة للمقطع الأول
+        CSTATE.translation = _needTrans ? (window._chunkTranslations?.[0] || _fullEn) : "";
         window._lastTranslationText = CSTATE.translation;
       }
 
@@ -11513,9 +11534,11 @@ If you want to offset all timestamps of a track such that the first one is zero,
             : _expElapsedBefore + (f * msPerFrame) / 1000;
         _cstateDirty = true;
         syncCSTATE();
-        // ضمان الترجمة أثناء التصدير: اكتب مباشرةً من vd بعد syncCSTATE حتى لا يُبطل قيمتها
+        // ضمان الترجمة أثناء التصدير: استخدم ترجمة المقطع الحالي
         if (isExporting && vd && vd.enText && window._translationEnabled) {
-          CSTATE.translation = vd.enText;
+          CSTATE.translation = (window._chunkTranslations && window._chunkTranslations[currentChunkIdx])
+            || window._lastTranslationText
+            || vd.enText;
         }
         drawFrameDirect();
         return -1;
@@ -13921,6 +13944,12 @@ If you want to offset all timestamps of a track such that the first one is zero,
         currentChunkIdx = Math.max(0, Math.min(idx, verseChunks.length - 1));
         const chunk = verseChunks[currentChunkIdx],
           clr = S.color || "#fff";
+
+        // ── تحديث ترجمة المقطع الحالي ──
+        if (window._translationEnabled && window._chunkTranslations && window._chunkTranslations.length > currentChunkIdx) {
+          window._lastTranslationText = window._chunkTranslations[currentChunkIdx] || window._fullEnTranslation || "";
+          CSTATE.translation = window._lastTranslationText;
+        }
         const useFade = S.fx.fadein && !instant;
         const html = chunk.words
           .map(
