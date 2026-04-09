@@ -12205,14 +12205,28 @@ If you want to offset all timestamps of a track such that the first one is zero,
                 window._expChunkAt.push({ f: frame, ci });
               }
             } else {
-              // ── مفيش توقيتات MAS — وزّع بنسبة الكلمات (مثل startChunkCycle) ──
+              // ── مفيش توقيتات MAS — جرب QDC segments أولاً ثم توزيع بالنسبة ──
               const numChunks = verseChunks.length;
-              const totalWords = verseChunks.reduce((s, c) => s + c.words.length, 0);
               const totalFrames = Math.ceil(buf.duration * FPS);
-              const framesPerWord = totalFrames / totalWords;
+              const expSegs = timingCache[`${S.surah.n}:${vd.ayahN}`] || null;
+
               for (let ci = 1; ci < numChunks; ci++) {
-                const startWord = verseChunks[ci].startIdx;
-                const frame = Math.max(1, Math.min(Math.round(startWord * framesPerWord), totalFrames - 1));
+                const firstWordIdx = verseChunks[ci].startIdx;
+                let frame;
+                if (expSegs && expSegs.length) {
+                  const seg = expSegs.find(([wi]) => wi === firstWordIdx);
+                  if (seg) {
+                    // seg[1] = startMs نسبي للآية
+                    const timeSec = seg[1] / 1000;
+                    frame = Math.max(1, Math.min(Math.round(timeSec * FPS), totalFrames - 1));
+                  }
+                }
+                if (!frame) {
+                  // fallback توزيع بالنسبة
+                  const totalWords = verseChunks.reduce((s, c) => s + c.words.length, 0);
+                  const fpw = totalFrames / totalWords;
+                  frame = Math.max(1, Math.min(Math.round(firstWordIdx * fpw), totalFrames - 1));
+                }
                 window._expChunkAt.push({ f: frame, ci });
               }
             }
@@ -12568,12 +12582,23 @@ If you want to offset all timestamps of a track such that the first one is zero,
               }
             } else {
               const nc = verseChunks.length;
-              const totalWords2 = verseChunks.reduce((s, c) => s + c.words.length, 0);
               const totalFrames2 = Math.ceil(buf.duration * FPS);
-              const fpw2 = totalFrames2 / totalWords2;
+              const expSegs2 = timingCache[`${S.surah.n}:${vd.ayahN}`] || null;
+
               for (let ci = 1; ci < nc; ci++) {
-                const startWord = verseChunks[ci].startIdx;
-                const frame = Math.max(1, Math.min(Math.round(startWord * fpw2), totalFrames2 - 1));
+                const firstWordIdx = verseChunks[ci].startIdx;
+                let frame;
+                if (expSegs2 && expSegs2.length) {
+                  const seg = expSegs2.find(([wi]) => wi === firstWordIdx);
+                  if (seg) {
+                    frame = Math.max(1, Math.min(Math.round((seg[1] / 1000) * FPS), totalFrames2 - 1));
+                  }
+                }
+                if (!frame) {
+                  const tw2 = verseChunks.reduce((s, c) => s + c.words.length, 0);
+                  const fpw2 = totalFrames2 / tw2;
+                  frame = Math.max(1, Math.min(Math.round(firstWordIdx * fpw2), totalFrames2 - 1));
+                }
                 window._expChunkAt.push({ f: frame, ci });
               }
             }
@@ -14018,28 +14043,35 @@ If you want to offset all timestamps of a track such that the first one is zero,
         clearChunkCycle();
         if (verseChunks.length <= 1) return;
 
-        // وزّع الوقت بالنسبة لعدد الكلمات في كل جزء
         const totalWords = verseChunks.reduce((s, c) => s + c.words.length, 0);
-        const msPerWord = (totalDuration * 1000) / totalWords;
+        const secPerWord = totalDuration / totalWords;
 
         // احسب وقت بداية كل مقطع بالثواني
-        const chunkStartTimes = verseChunks.map((ch) =>
-          (ch.startIdx * msPerWord) / 1000
-        );
+        // نحاول نستخدم word timings لو موجودة، وإلا توزيع بالنسبة
+        const segs = timingCache[`${S.surah?.n}:${curAN()}`] || null;
+
+        const chunkStartTimes = verseChunks.map((ch) => {
+          if (segs && segs.length) {
+            // ابحث عن أول كلمة في المقطع في الـ segments
+            const firstWordIdx = ch.startIdx;
+            const seg = segs.find(([wi]) => wi === firstWordIdx);
+            if (seg) return seg[1] / 1000; // ms → s
+          }
+          // fallback: توزيع بالنسبة
+          return ch.startIdx * secPerWord;
+        });
 
         let lastShownIdx = 0;
 
         function tick() {
           if (!S.playing) return;
           const now = audio.currentTime;
-          // شوف لو في مقطع تاني محتاج يظهر
           for (let ci = lastShownIdx + 1; ci < verseChunks.length; ci++) {
             if (now >= chunkStartTimes[ci]) {
               showChunk(ci, instant);
               lastShownIdx = ci;
             }
           }
-          // لو لسه في مقاطع باقية، كمّل المراقبة
           if (lastShownIdx < verseChunks.length - 1) {
             chunkTimer = requestAnimationFrame(tick);
           }
