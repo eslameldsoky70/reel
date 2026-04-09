@@ -12056,6 +12056,8 @@ If you want to offset all timestamps of a track such that the first one is zero,
               height: H,
               bitrate: qp.bitrate,
               framerate: FPS,
+              bitrateMode: "constant",        // CBR — يضمن عدم تجاوز الـ bitrate
+              latencyMode: "quality",
             });
             codecOk = true;
             break;
@@ -12298,7 +12300,9 @@ If you want to offset all timestamps of a track such that the first one is zero,
                   duration: frameDurUs,
                 });
               }
-              videoEnc.encode(vf, { keyFrame: globalFrame % (FPS * 2) === 0 });
+              // keyFrame: كل ثانيتين للـ presets العادية، كل 3 ثواني للشورتس الخفيف
+              const _kfInterval = currentPreset === "sh_480" ? FPS * 3 : FPS * 2;
+              videoEnc.encode(vf, { keyFrame: globalFrame % _kfInterval === 0 });
               vf.close();
             } catch (vfErr) {
               console.warn(
@@ -12617,8 +12621,12 @@ If you want to offset all timestamps of a track such that the first one is zero,
 
           const ayahFrames = Math.ceil(buf.duration * FPS);
           let hlActive = -1;
-          /* على iOS نستخدم جودة أقل للـ JPEG عشان toBlob تكون أسرع */
-          const _jpegQ = _isIOS ? 0.82 : 0.92;
+          /* جودة الـ JPEG حسب الـ preset:
+             - الشورتس الخفيف (480p): 0.75 — حجم أصغر
+             - iOS: 0.80 — أسرع
+             - باقي الـ presets: 0.90 */
+          const _isLightPreset = currentPreset === "sh_480";
+          const _jpegQ = _isIOS ? 0.80 : _isLightPreset ? 0.75 : 0.90;
           for (let f = 0; f < ayahFrames; f++) {
             if (_expAbort) break;
             window._expGlobalFrame = globalFrame;
@@ -12736,6 +12744,7 @@ If you want to offset all timestamps of a track such that the first one is zero,
         exportRecorder = new MediaRecorder(combined, {
           mimeType,
           videoBitsPerSecond: qp.bitrate,
+          audioBitsPerSecond: currentPreset === "sh_480" ? 64000 : 128000,
         });
         exportRecorder.ondataavailable = (e) => {
           if (e.data?.size > 0) exportChunks.push(e.data);
@@ -14998,8 +15007,8 @@ If you want to offset all timestamps of a track such that the first one is zero,
           w: 480,
           h: 854,
           fps: 30,
-          bitrate: 1_200_000,
-          desc: "حجم ملف صغير جداً، مناسب للإنترنت البطيء.",
+          bitrate: 800_000,
+          desc: "حجم صغير جداً — مناسب للمشاركة السريعة.",
         },
         sh_eco: {
           label: "شورتس اقتصادي",
@@ -15159,9 +15168,12 @@ If you want to offset all timestamps of a track such that the first one is zero,
           sfps.innerHTML = `<option value="${p.fps}" selected>${p.fps}</option>`;
         }
 
-        // الـ canvas ثابت على 540×960 — لا يتغير بالـ preset
-        canvas.width = 540;
-        canvas.height = 960;
+        // تحديث الـ canvas بأبعاد الـ preset الصحيحة
+        // الشورتس الخفيف (480p) يحتاج canvas أصغر لتوفير الذاكرة والحجم
+        const previewW = Math.min(p.w, 540); // للمعاينة نستخدم 540 كحد أقصى
+        const previewH = Math.round(previewW * (p.h / p.w));
+        canvas.width = previewW;
+        canvas.height = previewH;
         _gradCache = null;
         _mtCache.clear();
         markCstateDirty();
