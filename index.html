@@ -16441,13 +16441,14 @@ If you want to offset all timestamps of a track such that the first one is zero,
           // لما الآية تخلص — انتقل تلقائياً للآية التالية
           if (!MAS._sheikhEndHook) {
             MAS._sheikhEndHook = true;
+            MAS._sheikhEndHandler = function () {
+              if (!MAS.started) return;
+              // أغلق باقي المقاطع اللي لسه ما اتضغطتش
+              _masAutoFinishChunks();
+            };
             document
               .getElementById("audio")
-              .addEventListener("ended", function () {
-                if (!MAS.started) return;
-                // أغلق باقي المقاطع اللي لسه ما اتضغطتش
-                _masAutoFinishChunks();
-              });
+              .addEventListener("ended", MAS._sheikhEndHandler);
           }
         }
         masFlash();
@@ -16461,27 +16462,33 @@ If you want to offset all timestamps of a track such that the first one is zero,
         var shAu = document.getElementById("audio");
         var dur = shAu ? shAu.duration : 0;
         var base = MAS.ayahStartGlobal;
+        var ayahEnd = base + dur;
 
-        // أغلق كل المقاطع المتبقية بتقسيم متساوي
+        // أغلق كل المقاطع المتبقية (اللي لم يضغط عليها المستخدم) بتقسيم متساوي
         var ct = MAS.chunkTimings[cur];
         if (ct) {
           var remaining = MAS.chunks.length - MAS.chunkIdx;
-          var step = remaining > 0 ? dur / MAS.chunks.length : 0;
+          // احسب الوقت المتبقي من آخر مقطع مكتمل
+          var lastDone = MAS.chunkIdx > 0 && ct[MAS.chunkIdx - 1]
+            ? ct[MAS.chunkIdx - 1].end
+            : base;
+          var step = remaining > 0 ? (ayahEnd - lastDone) / remaining : 0;
           for (var c = MAS.chunkIdx; c < MAS.chunks.length; c++) {
-            var chStart = base + c * step;
-            var chEnd = base + (c + 1) * step;
+            var chStart = lastDone + (c - MAS.chunkIdx) * step;
+            var chEnd = lastDone + (c - MAS.chunkIdx + 1) * step;
             if (ct[c]) {
-              ct[c].start = chStart;
+              // لا تعدّل على بداية المقطع، فقط أغلق نهايته
               ct[c].end = chEnd;
-            } else
+            } else {
               ct.push({
                 start: chStart,
                 end: chEnd,
-                words: MAS.chunks[c].words,
+                words: MAS.chunks[c] ? MAS.chunks[c].words : [],
               });
+            }
           }
         }
-        if (MAS.timings[cur]) MAS.timings[cur].end = base + dur;
+        if (MAS.timings[cur]) MAS.timings[cur].end = ayahEnd;
         MAS.idx++;
         MAS.ayahStartGlobal = base + dur;
 
@@ -16616,6 +16623,14 @@ If you want to offset all timestamps of a track such that the first one is zero,
         MAS.chunkTimings = {};
         MAS.chunks = [];
         MAS.chunkIdx = 0;
+        MAS.ayahStartGlobal = 0;
+        // إزالة الـ hook عشان ما يتكررش
+        if (MAS._sheikhEndHook && MAS._sheikhEndHandler) {
+          var shAu = document.getElementById("audio");
+          if (shAu) shAu.removeEventListener("ended", MAS._sheikhEndHandler);
+          MAS._sheikhEndHook = false;
+          MAS._sheikhEndHandler = null;
+        }
         document.getElementById("mas-start-btn").style.display = "";
         document.getElementById("mas-next-btn").style.display = "none";
         document.getElementById("mas-save-btn").disabled = true;
@@ -16633,7 +16648,9 @@ If you want to offset all timestamps of a track such that the first one is zero,
           var au = window._casAudioUrl
             ? window._casAudio
             : document.querySelector("audio") || { currentTime: 0 };
-          var t = au.currentTime || (Date.now() - MAS.startTime) / 1000;
+          // في وضع الشيخ: وقت الـ clip نسبي → نضيف ayahStartGlobal
+          var rawT = au.currentTime || (Date.now() - MAS.startTime) / 1000;
+          var t = window._casAudioUrl ? rawT : MAS.ayahStartGlobal + rawT;
           var cur = MAS.queue[MAS.idx];
           if (cur) {
             var ct = MAS.chunkTimings[cur];
