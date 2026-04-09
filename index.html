@@ -12102,11 +12102,14 @@ If you want to offset all timestamps of a track such that the first one is zero,
 
         // بناء audio arrays — SR الحقيقي من الـ buffers مع ثانيتين padding
         const actualSR = buffers[0].sampleRate;
+        // AAC encoder priming: ~2048 samples تأخير في بداية التشفير
+        // نضيف صمت في بداية الـ audio عشان الصوت يتزامن مع الفيديو بالظبط
+        const AAC_PRIMING = Math.round(actualSR * 2048 / 44100);
         const actualTotalSamp =
-          buffers.reduce((s, b) => s + b.length, 0) + Math.ceil(actualSR * 0.5);
+          buffers.reduce((s, b) => s + b.length, 0) + Math.ceil(actualSR * 0.5) + AAC_PRIMING;
         const aL = new Float32Array(actualTotalSamp),
           aR = new Float32Array(actualTotalSamp);
-        let aOff = 0;
+        let aOff = AAC_PRIMING; // نبدأ الكتابة بعد الـ priming silence
         for (const buf of buffers) {
           aL.set(buf.getChannelData(0), aOff);
           aR.set(
@@ -12141,7 +12144,11 @@ If you want to offset all timestamps of a track such that the first one is zero,
         // يمنع تراكم الـ drift بين الآيات
         const audioBaseOffset = [];
         {
-          let _off = 0;
+          // نحسب الـ priming بعد الـ resample
+          const _primingResampled = actualSR === SR
+            ? AAC_PRIMING
+            : Math.round(AAC_PRIMING * (SR / actualSR));
+          let _off = _primingResampled;
           for (let i = 0; i < buffers.length; i++) {
             audioBaseOffset.push(_off);
             const _rLen =
@@ -12508,11 +12515,12 @@ If you want to offset all timestamps of a track such that the first one is zero,
         if (expCtx.state === "suspended") await expCtx.resume().catch(() => {});
         const SR = buffers[0].sampleRate;
         const TAIL = Math.ceil(SR * 0.5);
-        let totalSamp = buffers.reduce((s, b) => s + b.length, 0) + TAIL;
+        const AAC_PRIMING_WM = Math.round(SR * 2048 / 44100);
+        let totalSamp = buffers.reduce((s, b) => s + b.length, 0) + TAIL + AAC_PRIMING_WM;
         const audioBuf = expCtx.createBuffer(2, totalSamp, SR);
         const chL = audioBuf.getChannelData(0),
           chR = audioBuf.getChannelData(1);
-        let wp = 0;
+        let wp = AAC_PRIMING_WM; // نبدأ بعد الـ priming silence
         for (const buf of buffers) {
           chL.set(buf.getChannelData(0), wp);
           chR.set(
