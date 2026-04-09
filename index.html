@@ -12205,13 +12205,16 @@ If you want to offset all timestamps of a track such that the first one is zero,
                 window._expChunkAt.push({ f: frame, ci });
               }
             } else {
-              // ── مفيش توقيتات MAS — وزّع بالتساوي ──
+              // ── مفيش توقيتات MAS — وزّع بنسبة الكلمات (مثل startChunkCycle) ──
               const numChunks = verseChunks.length;
-              const framesPerChunk = Math.floor(
-                Math.ceil(buf.duration * FPS) / numChunks,
-              );
-              for (let ci = 1; ci < numChunks; ci++)
-                window._expChunkAt.push({ f: ci * framesPerChunk, ci });
+              const totalWords = verseChunks.reduce((s, c) => s + c.words.length, 0);
+              const totalFrames = Math.ceil(buf.duration * FPS);
+              const framesPerWord = totalFrames / totalWords;
+              for (let ci = 1; ci < numChunks; ci++) {
+                const startWord = verseChunks[ci].startIdx;
+                const frame = Math.max(1, Math.min(Math.round(startWord * framesPerWord), totalFrames - 1));
+                window._expChunkAt.push({ f: frame, ci });
+              }
             }
           }
           xShow(idx + 1, total, S.surah.ar + " — آية " + arN(vd.ayahN));
@@ -12565,9 +12568,14 @@ If you want to offset all timestamps of a track such that the first one is zero,
               }
             } else {
               const nc = verseChunks.length;
-              const fpc = Math.floor(Math.ceil(buf.duration * FPS) / nc);
-              for (let ci = 1; ci < nc; ci++)
-                window._expChunkAt.push({ f: ci * fpc, ci });
+              const totalWords2 = verseChunks.reduce((s, c) => s + c.words.length, 0);
+              const totalFrames2 = Math.ceil(buf.duration * FPS);
+              const fpw2 = totalFrames2 / totalWords2;
+              for (let ci = 1; ci < nc; ci++) {
+                const startWord = verseChunks[ci].startIdx;
+                const frame = Math.max(1, Math.min(Math.round(startWord * fpw2), totalFrames2 - 1));
+                window._expChunkAt.push({ f: frame, ci });
+              }
             }
           }
           xShow(idx + 1, total, S.surah.ar + " — آية " + arN(vd.ayahN));
@@ -14013,26 +14021,34 @@ If you want to offset all timestamps of a track such that the first one is zero,
         // وزّع الوقت بالنسبة لعدد الكلمات في كل جزء
         const totalWords = verseChunks.reduce((s, c) => s + c.words.length, 0);
         const msPerWord = (totalDuration * 1000) / totalWords;
-        const FADE_OFFSET = instant ? 0 : 220;
 
-        let ci = 1;
-        function scheduleNext() {
-          if (ci >= verseChunks.length) return;
-          const wordsBeforeChunk = verseChunks[ci].startIdx;
-          const chunkStartMs = wordsBeforeChunk * msPerWord;
-          const elapsed = (audio.currentTime || 0) * 1000;
-          const delay = Math.max(50, chunkStartMs - elapsed - FADE_OFFSET);
-          chunkTimer = setTimeout(() => {
-            showChunk(ci, instant);
-            ci++;
-            scheduleNext();
-          }, delay);
+        // احسب وقت بداية كل مقطع بالثواني
+        const chunkStartTimes = verseChunks.map((ch) =>
+          (ch.startIdx * msPerWord) / 1000
+        );
+
+        let lastShownIdx = 0;
+
+        function tick() {
+          if (!S.playing) return;
+          const now = audio.currentTime;
+          // شوف لو في مقطع تاني محتاج يظهر
+          for (let ci = lastShownIdx + 1; ci < verseChunks.length; ci++) {
+            if (now >= chunkStartTimes[ci]) {
+              showChunk(ci, instant);
+              lastShownIdx = ci;
+            }
+          }
+          // لو لسه في مقاطع باقية، كمّل المراقبة
+          if (lastShownIdx < verseChunks.length - 1) {
+            chunkTimer = requestAnimationFrame(tick);
+          }
         }
-        scheduleNext();
+        chunkTimer = requestAnimationFrame(tick);
       }
       function clearChunkCycle() {
         if (chunkTimer) {
-          clearTimeout(chunkTimer);
+          cancelAnimationFrame(chunkTimer);
           chunkTimer = null;
         }
       }
