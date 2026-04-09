@@ -3369,7 +3369,7 @@ If you want to offset all timestamps of a track such that the first one is zero,
         right: 14px;
         left: 14px;
         top: 55px;
-        bottom: 30px;
+        bottom: 80px;
         z-index: 2;
         text-align: center;
         display: flex;
@@ -3384,20 +3384,20 @@ If you want to offset all timestamps of a track such that the first one is zero,
         word-break: break-word;
         transition: opacity 0.25s ease;
         font-family: "Scheherazade New", serif;
-        font-size: 14px;
-        line-height: 1.75;
+        font-size: 10px;
+        line-height: 1.6;
         overflow: visible;
       }
       @media (max-width: 700px) {
         .v-a {
-          font-size: 16px !important;
-          line-height: 1.7;
+          font-size: 11px !important;
+          line-height: 1.6;
         }
       }
       @media (max-width: 400px) {
         .v-a {
-          font-size: 14px !important;
-          line-height: 1.6;
+          font-size: 10px !important;
+          line-height: 1.55;
         }
       }
       .v-a span {
@@ -13947,8 +13947,12 @@ If you want to offset all timestamps of a track such that the first one is zero,
 
         // ── تحديث ترجمة المقطع الحالي ──
         if (window._translationEnabled && window._chunkTranslations && window._chunkTranslations.length > currentChunkIdx) {
-          window._lastTranslationText = window._chunkTranslations[currentChunkIdx] || window._fullEnTranslation || "";
-          CSTATE.translation = window._lastTranslationText;
+          var _ct = window._chunkTranslations[currentChunkIdx] || window._fullEnTranslation || "";
+          window._lastTranslationText = _ct;
+          CSTATE.translation = _ct;
+          // تحديث عنصر المعاينة
+          var _vtEl = document.getElementById("vTranslation");
+          if (_vtEl) _vtEl.textContent = _ct;
         }
         const useFade = S.fx.fadein && !instant;
         const html = chunk.words
@@ -14160,9 +14164,9 @@ If you want to offset all timestamps of a track such that the first one is zero,
         const _container = document.getElementById("vArea");
         const _containerW = _container ? _container.offsetWidth : 216;
         const _scl = Math.min(1, _containerW / 216);
-        const _fs = Math.max(10, Math.round((S.size || 14) * _scl));
+        const _fs = Math.max(8, Math.round((S.size || 14) * _scl * 0.72));
         $("vAr").style.fontSize = _fs + "px";
-        $("vAr").style.lineHeight = "1.75";
+        $("vAr").style.lineHeight = "1.6";
         markCstateDirty(); // ← notify canvas
       }
 
@@ -17976,15 +17980,17 @@ If you want to offset all timestamps of a track such that the first one is zero,
             el.id = "vTranslation";
             el.style.cssText = [
               "text-align:center",
-              "font-size:11px",
+              "font-size:8px",
               "color:rgba(200,230,210,.75)",
               "font-family:'Cairo',sans-serif",
-              "line-height:1.65",
-              "padding:4px 14px 0",
-              "margin-top:5px",
+              "line-height:1.5",
+              "padding:3px 10px 0",
+              "margin-top:3px",
               "direction:ltr",
               "font-style:italic",
               "word-break:break-word",
+              "max-height:60px",
+              "overflow:hidden",
             ].join(";");
             vAr.parentNode.insertBefore(el, vAr.nextSibling);
           }
@@ -18010,10 +18016,30 @@ If you want to offset all timestamps of a track such that the first one is zero,
           // دالة مساعدة لتعيين النص في العنصر + المتغير العام
           function _setTransText(txt) {
             _lastTranslationText = txt;
-            // مزامنة على window حتى يراها syncCSTATE في script آخر
             window._lastTranslationText = txt;
+            window._fullEnTranslation = txt;
+            // إعادة بناء _chunkTranslations بناءً على النص الكامل الجديد
+            if (window.verseChunks && window.verseChunks.length > 1 && txt) {
+              var enWords = txt.trim().split(/\s+/).filter(Boolean);
+              var totalAr = window.verseChunks.reduce(function(s,c){return s+c.words.length;},0);
+              var enIdx2 = 0;
+              window._chunkTranslations = window.verseChunks.map(function(ch, ci){
+                var ratio = ch.words.length / totalAr;
+                var count = (ci === window.verseChunks.length-1)
+                  ? enWords.length - enIdx2
+                  : Math.round(ratio * enWords.length);
+                count = Math.max(1, count);
+                var slice = enWords.slice(enIdx2, enIdx2+count).join(" ");
+                enIdx2 = Math.min(enIdx2+count, enWords.length);
+                return slice;
+              });
+            } else {
+              window._chunkTranslations = null;
+            }
             var curEl = document.getElementById("vTranslation");
-            if (curEl && _translationEnabled) curEl.textContent = txt;
+            var dispTxt = (window._chunkTranslations && window._chunkTranslations[window.currentChunkIdx || 0])
+              || txt;
+            if (curEl && _translationEnabled) curEl.textContent = dispTxt;
             if (typeof markCstateDirty === "function") markCstateDirty();
           }
           // 1. جرب من verseCache أولاً (قد يكون محمّلاً مسبقاً)
