@@ -8344,14 +8344,14 @@ If you want to offset all timestamps of a track such that the first one is zero,
                     min="1"
                     max="10"
                     step="1"
-                    value="5"
+                    value="3"
                     style="flex: 1"
                     oninput="setLinesPerSlide(+this.value)"
                   />
                   <span
                     id="linesPerSlideVal"
                     style="font-size: 10px; color: #e4b55a; min-width: 28px"
-                    >5</span
+                    >3</span
                   >
                 </div>
                 <span
@@ -10591,7 +10591,7 @@ If you want to offset all timestamps of a track such that the first one is zero,
         const fontSizePx = Math.round(
           (CSTATE.fontSize / 220) * (canvas.width - 110),
         );
-        const _lhm = window._lineHeightMult > 0 ? window._lineHeightMult : 1.9;
+        const _lhm = window._lineHeightMult > 0 ? window._lineHeightMult : 1.4;
         const lineH = fontSizePx * _lhm;
         const textCX = canvas.width / 2;
         const maxTextW = canvas.width - 120;
@@ -10753,22 +10753,22 @@ If you want to offset all timestamps of a track such that the first one is zero,
         }
         if (CSTATE.showWave) {
           CSTATE.wavePhase = (CSTATE.wavePhase || 0) + 0.12;
-          const _wScale = W / 540; // نسبة الـ canvas — 540 هو حجم المعاينة الأساسي
-          const bars = 22,
-            barW = Math.round(8 * _wScale),
-            gap = Math.round(12 * _wScale);
+          const _wScale = W / 540;
+          const bars = 18,
+            barW = Math.round(5 * _wScale),
+            gap = Math.round(7 * _wScale);
           const totalW = bars * (barW + gap);
           let bx = W / 2 - totalW / 2;
           const baseY = H - 210;
           for (let b = 0; b < bars; b++) {
             const amp = 0.5 + 0.5 * Math.sin(CSTATE.wavePhase + b * 0.38);
-            const bh = Math.round((14 + amp * 80) * _wScale);
+            const bh = Math.round((8 + amp * 40) * _wScale);
             const grad = ctx.createLinearGradient(0, baseY - bh, 0, baseY);
             grad.addColorStop(0, "rgba(228,181,90,0.9)");
             grad.addColorStop(1, "rgba(201,151,58,0.3)");
             ctx.fillStyle = grad;
             ctx.beginPath();
-            _safeRoundRect(ctx, bx, baseY - bh, barW, bh, Math.round(3 * _wScale));
+            _safeRoundRect(ctx, bx, baseY - bh, barW, bh, Math.round(2 * _wScale));
             ctx.fill();
             bx += barW + gap;
           }
@@ -10776,12 +10776,12 @@ If you want to offset all timestamps of a track such that the first one is zero,
         // ── اسم القارئ تحت الموجة ──
         if (CSTATE.shName && CSTATE.showReciterName) {
           const _nScale = W / 540;
-          ctx.font = `${Math.round(38 * _nScale)}px "Cairo", sans-serif`;
+          ctx.font = `${Math.round(22 * _nScale)}px "Cairo", sans-serif`;
           ctx.textAlign = "center";
           ctx.direction = "rtl";
           ctx.fillStyle = "rgba(140,190,160,0.85)";
           ctx.shadowColor = "rgba(0,0,0,0.6)";
-          ctx.shadowBlur = Math.round(8 * _nScale);
+          ctx.shadowBlur = Math.round(6 * _nScale);
           ctx.fillText(CSTATE.shName, W / 2, H - 155);
           ctx.shadowBlur = 0;
           ctx.direction = "ltr";
@@ -13918,7 +13918,7 @@ If you want to offset all timestamps of a track such that the first one is zero,
         const srcWords = (text || "").trim().split(/\s+/).filter(Boolean);
         const displayWords = wordList && wordList.length ? wordList : srcWords;
         if (!displayWords.length) return [];
-        const lps = window._linesPerSlide > 0 ? window._linesPerSlide : 5;
+        const lps = window._linesPerSlide > 0 ? window._linesPerSlide : 3;
         const wpl = window._wordsPerLine > 0 ? window._wordsPerLine : 4;
         const SZ = Math.max(3, Math.round(lps * wpl));
         const MIN_LAST = 3; // أقل عدد كلمات يستحق مقطع مستقل
@@ -16077,7 +16077,7 @@ If you want to offset all timestamps of a track such that the first one is zero,
         var ar = _masGetAyahText(ayahNum);
         if (!ar) return [{ words: [], text: "" }];
         var words = ar.trim().split(/\s+/).filter(Boolean);
-        var lps2 = window._linesPerSlide > 0 ? window._linesPerSlide : 5;
+        var lps2 = window._linesPerSlide > 0 ? window._linesPerSlide : 3;
         var wpl2 = window._wordsPerLine > 0 ? window._wordsPerLine : 4;
         var SZ = Math.max(3, Math.round(lps2 * wpl2));
         var MIN_LAST = 3; // أقل عدد كلمات يستحق مقطع مستقل
@@ -18248,11 +18248,11 @@ If you want to offset all timestamps of a track such that the first one is zero,
         window._borderWidth =
           window._borderWidth !== undefined ? window._borderWidth : 0;
         window._lineHeightMult =
-          window._lineHeightMult !== undefined ? window._lineHeightMult : 1.9;
+          window._lineHeightMult !== undefined ? window._lineHeightMult : 1.4;
         window._letterSpacing =
           window._letterSpacing !== undefined ? window._letterSpacing : 0;
         window._linesPerSlide =
-          window._linesPerSlide !== undefined ? window._linesPerSlide : 5;
+          window._linesPerSlide !== undefined ? window._linesPerSlide : 3;
         window._wordsPerLine =
           window._wordsPerLine !== undefined ? window._wordsPerLine : 4;
         window._verseFullText = window._verseFullText || "";
