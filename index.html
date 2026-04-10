@@ -9,8 +9,8 @@
       script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.emailjs.com https://unpkg.com blob:;
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src 'self' https://fonts.gstatic.com data:;
-      connect-src 'self' https://api.emailjs.com https://cdn.jsdelivr.net https://unpkg.com https://api.alquran.cloud https://api.qurancdn.com https://everyayah.com https://cdn.islamic.network https://verses.quran.com https://al-quran.info https://quran-api.pages.dev https://images.unsplash.com;
-      img-src 'self' data: blob: https://images.unsplash.com https://plus.unsplash.com https://*.unsplash.com;
+      connect-src 'self' https://api.emailjs.com https://api.cloudinary.com https://cdn.jsdelivr.net https://unpkg.com https://api.alquran.cloud https://api.qurancdn.com https://everyayah.com https://cdn.islamic.network https://verses.quran.com https://al-quran.info https://quran-api.pages.dev https://images.unsplash.com;
+      img-src 'self' data: blob: https://images.unsplash.com https://res.cloudinary.com https://plus.unsplash.com https://*.unsplash.com;
       media-src 'self' blob: https://everyayah.com https://cdn.islamic.network https://verses.quran.com;
       worker-src 'self' blob:;
       child-src blob:;
@@ -20077,14 +20077,17 @@ If you want to offset all timestamps of a track such that the first one is zero,
     <script>
     (function(){
       var selectedType = '';
+      var ssFile = null;
       var ssBase64 = '';
+
+      var CLOUDINARY_CLOUD = 'dknscghln';
+      var CLOUDINARY_PRESET = 'img13564149';
 
       window.openReportPanel = function(){
         document.getElementById('reportOverlay').classList.add('open');
       };
       window.closeReportPanel = function(){
         document.getElementById('reportOverlay').classList.remove('open');
-        // إعادة ضبط بعد إغلاق
         setTimeout(resetReportForm, 400);
       };
       window.overlayClickReport = function(e){
@@ -20100,6 +20103,7 @@ If you want to offset all timestamps of a track such that the first one is zero,
       window.handleSSUpload = function(e){
         var file = e.target.files[0];
         if(!file) return;
+        ssFile = file;
         var reader = new FileReader();
         reader.onload = function(ev){
           ssBase64 = ev.target.result;
@@ -20111,12 +20115,30 @@ If you want to offset all timestamps of a track such that the first one is zero,
       };
 
       window.removeScreenshot = function(){
+        ssFile = null;
         ssBase64 = '';
         document.getElementById('ssImg').src = '';
         document.getElementById('ssPreview').style.display = 'none';
         document.getElementById('reportScreenshotArea').style.display = 'block';
         document.getElementById('reportFileInput').value = '';
       };
+
+      function uploadToCloudinary(file, callback){
+        var formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_PRESET);
+        fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/image/upload', {
+          method: 'POST',
+          body: formData
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+          callback(null, data.secure_url || null);
+        })
+        .catch(function(err){
+          callback(err, null);
+        });
+      }
 
       window.submitReportForm = function(){
         var title   = (document.getElementById('reportTitle').value || '').trim();
@@ -20138,31 +20160,47 @@ If you want to offset all timestamps of a track such that the first one is zero,
           'الشاشة: ' + screen.width + 'x' + screen.height
         ].join('\n');
 
-        var templateParams = {
-          name:           email ? email : 'مستخدم Islam Reels',
-          report_type:    selectedType,
-          report_title:   title,
-          report_details: details,
-          user_email:     email || 'لم يُذكر',
-          device_info:    deviceInfo,
-          screenshot_url: ssBase64 ? '[تم رفع لقطة شاشة]' : 'لا يوجد'
-        };
+        function sendEmail(screenshotUrl){
+          var templateParams = {
+            name:           email ? email : 'مستخدم Islam Reels',
+            report_type:    selectedType,
+            report_title:   title,
+            report_details: details,
+            user_email:     email || 'لم يُذكر',
+            device_info:    deviceInfo,
+            screenshot_url: screenshotUrl || 'لا يوجد'
+          };
 
-        emailjs.send('service_dvil5es', 'template_33bim5n', templateParams)
-          .then(function(){
-            document.getElementById('reportBody').style.display = 'none';
-            btn.style.display = 'none';
-            document.getElementById('reportSuccess').style.display = 'flex';
-          })
-          .catch(function(err){
-            btn.disabled = false;
-            btn.innerHTML = '<span>📨</span> إرسال الملاحظة';
-            alert('حدث خطأ في الإرسال، يرجى المحاولة مرة أخرى.\n' + JSON.stringify(err));
+          emailjs.send('service_dvil5es', 'template_33bim5n', templateParams)
+            .then(function(){
+              document.getElementById('reportBody').style.display = 'none';
+              btn.style.display = 'none';
+              document.getElementById('reportSuccess').style.display = 'flex';
+            })
+            .catch(function(err){
+              btn.disabled = false;
+              btn.innerHTML = '<span>📨</span> إرسال الملاحظة';
+              alert('حدث خطأ في الإرسال، يرجى المحاولة مرة أخرى.\n' + JSON.stringify(err));
+            });
+        }
+
+        if(ssFile){
+          btn.innerHTML = '⏳ جاري رفع الصورة...';
+          uploadToCloudinary(ssFile, function(err, url){
+            if(err || !url){
+              sendEmail('فشل رفع الصورة');
+            } else {
+              sendEmail(url);
+            }
           });
+        } else {
+          sendEmail(null);
+        }
       };
 
       function resetReportForm(){
         selectedType = '';
+        ssFile = null;
         ssBase64 = '';
         document.querySelectorAll('.rtype-btn').forEach(function(b){ b.classList.remove('active'); });
         ['reportTitle','reportDetails','reportEmail'].forEach(function(id){
