@@ -19709,7 +19709,9 @@ If you want to offset all timestamps of a track such that the first one is zero,
 
     <!-- ======= نظام الإبلاغ عن مشكلة ======= -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    <script>emailjs.init('kllG1Ekoli5SxH7So');</script>
+    <script>
+      emailjs.init("kllG1Ekoli5SxH7So");
+    </script>
 
     <style>
       /* ── زر عائم ── */
@@ -19724,15 +19726,20 @@ If you want to offset all timestamps of a track such that the first one is zero,
         background: linear-gradient(135deg, #b8860b, #c9973a);
         border: none;
         cursor: pointer;
-        box-shadow: 0 4px 18px rgba(201,151,58,0.5);
+        box-shadow: 0 4px 18px rgba(201, 151, 58, 0.5);
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 22px;
-        transition: transform .2s, box-shadow .2s;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
         color: #fff;
       }
-      #reportBtn:hover { transform: scale(1.12); box-shadow: 0 6px 24px rgba(201,151,58,0.7); }
+      #reportBtn:hover {
+        transform: scale(1.12);
+        box-shadow: 0 6px 24px rgba(201, 151, 58, 0.7);
+      }
 
       /* ── خلفية شفافة ── */
       #reportOverlay {
@@ -19740,46 +19747,57 @@ If you want to offset all timestamps of a track such that the first one is zero,
         position: fixed;
         inset: 0;
         z-index: 10000;
-        background: rgba(0,0,0,0.55);
+        background: rgba(0, 0, 0, 0.55);
         backdrop-filter: blur(3px);
         align-items: flex-end;
         justify-content: center;
         padding-bottom: 0;
       }
-      #reportOverlay.open { display: flex; }
+      #reportOverlay.open {
+        display: flex;
+      }
 
       /* ── النافذة الرئيسية ── */
       #reportPanel {
         width: min(460px, 100vw);
         max-height: 92vh;
-        background: #12121f;
+        background: rgb(7 14 9);
         border-radius: 22px 22px 0 0;
         overflow: hidden;
         display: flex;
         flex-direction: column;
-        font-family: 'Cairo', sans-serif;
+        font-family: "Cairo", sans-serif;
         direction: rtl;
-        animation: slideUpPanel .3s cubic-bezier(.25,.8,.25,1);
+        animation: slideUpPanel 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
       }
       @keyframes slideUpPanel {
-        from { transform: translateY(100%); opacity: 0; }
-        to   { transform: translateY(0);    opacity: 1; }
+        from {
+          transform: translateY(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
       }
 
       /* ── رأس النافذة ── */
       #reportHeader {
         padding: 18px 20px 14px;
-        border-bottom: 1px solid rgba(255,255,255,0.07);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
         flex-shrink: 0;
       }
       #reportHeader .rh-icon {
-        width: 38px; height: 38px;
-        background: rgba(201,151,58,0.15);
+        width: 38px;
+        height: 38px;
+        background: rgba(201, 151, 58, 0.15);
         border-radius: 10px;
-        display: flex; align-items: center; justify-content: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         font-size: 18px;
         margin-left: 12px;
         flex-shrink: 0;
@@ -19797,17 +19815,21 @@ If you want to offset all timestamps of a track such that the first one is zero,
         line-height: 1.5;
       }
       #reportCloseBtn {
-        background: rgba(255,255,255,0.07);
+        background: rgba(255, 255, 255, 0.07);
         border: none;
         color: #aaa;
-        width: 30px; height: 30px;
+        width: 30px;
+        height: 30px;
         border-radius: 50%;
         cursor: pointer;
         font-size: 14px;
         flex-shrink: 0;
-        transition: background .15s;
+        transition: background 0.15s;
       }
-      #reportCloseBtn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+      #reportCloseBtn:hover {
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff;
+      }
 
       /* ── جسم الفورم ── */
       #reportBody {
@@ -19817,7 +19839,7 @@ If you want to offset all timestamps of a track such that the first one is zero,
         flex-direction: column;
         gap: 16px;
         scrollbar-width: thin;
-        scrollbar-color: rgba(201,151,58,.3) transparent;
+        scrollbar-color: rgba(201, 151, 58, 0.3) transparent;
       }
 
       /* ── نوع الملاحظة ── */
@@ -19827,7 +19849,9 @@ If you want to offset all timestamps of a track such that the first one is zero,
         margin-bottom: 8px;
         display: block;
       }
-      .rf-label span { color: #e74c3c; }
+      .rf-label span {
+        color: #e74c3c;
+      }
       .rtype-group {
         display: flex;
         gap: 8px;
@@ -19836,68 +19860,86 @@ If you want to offset all timestamps of a track such that the first one is zero,
         flex: 1;
         padding: 10px 6px;
         border-radius: 12px;
-        border: 1.5px solid rgba(255,255,255,0.1);
-        background: rgba(255,255,255,0.04);
+        border: 1.5px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.04);
         color: #8a9a8a;
         cursor: pointer;
-        font-family: 'Cairo', sans-serif;
+        font-family: "Cairo", sans-serif;
         font-size: 11px;
         text-align: center;
-        transition: .2s;
+        transition: 0.2s;
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 4px;
       }
-      .rtype-btn .rt-icon { font-size: 18px; }
+      .rtype-btn .rt-icon {
+        font-size: 18px;
+      }
       .rtype-btn:hover {
-        border-color: rgba(201,151,58,.4);
-        background: rgba(201,151,58,.07);
+        border-color: rgba(201, 151, 58, 0.4);
+        background: rgba(201, 151, 58, 0.07);
         color: #c9973a;
       }
       .rtype-btn.active {
         border-color: #c9973a;
-        background: rgba(201,151,58,.15);
+        background: rgba(201, 151, 58, 0.15);
         color: #c9973a;
         font-weight: 700;
       }
 
       /* ── حقول الإدخال ── */
-      .rf-input, .rf-textarea {
+      .rf-input,
+      .rf-textarea {
         width: 100%;
         box-sizing: border-box;
-        background: rgba(255,255,255,0.05);
-        border: 1.5px solid rgba(255,255,255,0.1);
+        background: rgba(255, 255, 255, 0.05);
+        border: 1.5px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
         padding: 11px 14px;
         color: #f0ebe1;
-        font-family: 'Cairo', sans-serif;
+        font-family: "Cairo", sans-serif;
         font-size: 13px;
         outline: none;
         direction: rtl;
-        transition: border-color .2s;
+        transition: border-color 0.2s;
       }
-      .rf-input:focus, .rf-textarea:focus {
-        border-color: rgba(201,151,58,.6);
+      .rf-input:focus,
+      .rf-textarea:focus {
+        border-color: rgba(201, 151, 58, 0.6);
       }
-      .rf-input::placeholder, .rf-textarea::placeholder { color: rgba(240,235,225,0.3); }
-      .rf-textarea { resize: vertical; min-height: 90px; }
+      .rf-input::placeholder,
+      .rf-textarea::placeholder {
+        color: rgba(240, 235, 225, 0.3);
+      }
+      .rf-textarea {
+        resize: vertical;
+        min-height: 90px;
+      }
 
       /* ── رفع لقطة شاشة ── */
       #reportScreenshotArea {
-        border: 1.5px dashed rgba(255,255,255,0.12);
+        border: 1.5px dashed rgba(255, 255, 255, 0.12);
         border-radius: 12px;
         padding: 14px;
         text-align: center;
         cursor: pointer;
         color: #6a7a6a;
         font-size: 12px;
-        transition: .2s;
+        transition: 0.2s;
         position: relative;
       }
-      #reportScreenshotArea:hover { border-color: rgba(201,151,58,.4); color: #c9973a; }
-      #reportScreenshotArea .ss-icon { font-size: 22px; margin-bottom: 4px; }
-      #reportFileInput { display: none; }
+      #reportScreenshotArea:hover {
+        border-color: rgba(201, 151, 58, 0.4);
+        color: #c9973a;
+      }
+      #reportScreenshotArea .ss-icon {
+        font-size: 22px;
+        margin-bottom: 4px;
+      }
+      #reportFileInput {
+        display: none;
+      }
       #ssPreview {
         display: none;
         margin-top: 8px;
@@ -19905,15 +19947,21 @@ If you want to offset all timestamps of a track such that the first one is zero,
         overflow: hidden;
         position: relative;
       }
-      #ssPreview img { width: 100%; border-radius: 8px; display: block; }
+      #ssPreview img {
+        width: 100%;
+        border-radius: 8px;
+        display: block;
+      }
       #ssRemove {
         position: absolute;
-        top: 6px; left: 6px;
-        background: rgba(0,0,0,0.6);
+        top: 6px;
+        left: 6px;
+        background: rgba(0, 0, 0, 0.6);
         color: #fff;
         border: none;
         border-radius: 50%;
-        width: 24px; height: 24px;
+        width: 24px;
+        height: 24px;
         cursor: pointer;
         font-size: 12px;
       }
@@ -19927,7 +19975,11 @@ If you want to offset all timestamps of a track such that the first one is zero,
         align-items: flex-start;
         gap: 6px;
       }
-      .rf-device-note span { color: #c9973a; font-size: 13px; flex-shrink: 0; }
+      .rf-device-note span {
+        color: #c9973a;
+        font-size: 13px;
+        flex-shrink: 0;
+      }
 
       /* ── زر الإرسال ── */
       #reportSubmitBtn {
@@ -19937,7 +19989,7 @@ If you want to offset all timestamps of a track such that the first one is zero,
         border: none;
         background: linear-gradient(135deg, #b8860b, #c9973a);
         color: #fff;
-        font-family: 'Cairo', sans-serif;
+        font-family: "Cairo", sans-serif;
         font-size: 14px;
         font-weight: 700;
         cursor: pointer;
@@ -19945,13 +19997,22 @@ If you want to offset all timestamps of a track such that the first one is zero,
         align-items: center;
         justify-content: center;
         gap: 8px;
-        transition: opacity .2s, transform .15s;
+        transition:
+          opacity 0.2s,
+          transform 0.15s;
         flex-shrink: 0;
         margin: 0 20px 20px;
         width: calc(100% - 40px);
       }
-      #reportSubmitBtn:hover { opacity: .88; transform: translateY(-1px); }
-      #reportSubmitBtn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+      #reportSubmitBtn:hover {
+        opacity: 0.88;
+        transform: translateY(-1px);
+      }
+      #reportSubmitBtn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
 
       /* ── شاشة النجاح ── */
       #reportSuccess {
@@ -19963,16 +20024,35 @@ If you want to offset all timestamps of a track such that the first one is zero,
         gap: 12px;
         text-align: center;
       }
-      #reportSuccess .rs-anim { font-size: 52px; animation: popIn .4s ease; }
-      @keyframes popIn { from{transform:scale(0)} to{transform:scale(1)} }
-      #reportSuccess h3 { margin: 0; color: #f0ebe1; font-size: 16px; }
-      #reportSuccess p  { margin: 0; color: #7a8a7a; font-size: 12px; line-height: 1.7; }
+      #reportSuccess .rs-anim {
+        font-size: 52px;
+        animation: popIn 0.4s ease;
+      }
+      @keyframes popIn {
+        from {
+          transform: scale(0);
+        }
+        to {
+          transform: scale(1);
+        }
+      }
+      #reportSuccess h3 {
+        margin: 0;
+        color: #f0ebe1;
+        font-size: 16px;
+      }
+      #reportSuccess p {
+        margin: 0;
+        color: #7a8a7a;
+        font-size: 12px;
+        line-height: 1.7;
+      }
       #reportSuccessClose {
         margin-top: 10px;
         background: linear-gradient(135deg, #b8860b, #c9973a);
         border: none;
         color: #fff;
-        font-family: 'Cairo', sans-serif;
+        font-family: "Cairo", sans-serif;
         font-size: 13px;
         padding: 10px 28px;
         border-radius: 20px;
@@ -19981,15 +20061,16 @@ If you want to offset all timestamps of a track such that the first one is zero,
     </style>
 
     <!-- زر عائم -->
-    <button id="reportBtn" onclick="openReportPanel()" title="تواصل معنا">💬</button>
+    <button id="reportBtn" onclick="openReportPanel()" title="تواصل معنا">
+      💬
+    </button>
 
     <!-- خلفية + نافذة -->
     <div id="reportOverlay" onclick="overlayClickReport(event)">
       <div id="reportPanel">
-
         <!-- الرأس -->
         <div id="reportHeader">
-          <div style="display:flex;align-items:flex-start;flex:1">
+          <div style="display: flex; align-items: flex-start; flex: 1">
             <div class="rh-icon">💬</div>
             <div class="rh-text">
               <h3>تواصل معنا</h3>
@@ -20001,18 +20082,29 @@ If you want to offset all timestamps of a track such that the first one is zero,
 
         <!-- الفورم -->
         <div id="reportBody">
-
           <!-- نوع الملاحظة -->
           <div>
             <label class="rf-label">نوع الملاحظة <span>*</span></label>
             <div class="rtype-group">
-              <button class="rtype-btn" data-type="خطأ تقني" onclick="selectRType(this)">
+              <button
+                class="rtype-btn"
+                data-type="خطأ تقني"
+                onclick="selectRType(this)"
+              >
                 <span class="rt-icon">🐛</span>خطأ تقني
               </button>
-              <button class="rtype-btn" data-type="اقتراح" onclick="selectRType(this)">
+              <button
+                class="rtype-btn"
+                data-type="اقتراح"
+                onclick="selectRType(this)"
+              >
                 <span class="rt-icon">💡</span>اقتراح
               </button>
-              <button class="rtype-btn" data-type="سؤال" onclick="selectRType(this)">
+              <button
+                class="rtype-btn"
+                data-type="سؤال"
+                onclick="selectRType(this)"
+              >
                 <span class="rt-icon">❓</span>سؤال
               </button>
             </div>
@@ -20021,28 +20113,52 @@ If you want to offset all timestamps of a track such that the first one is zero,
           <!-- العنوان -->
           <div>
             <label class="rf-label">العنوان <span>*</span></label>
-            <input id="reportTitle" class="rf-input" type="text" placeholder="مثلاً: الخطأ لا يظهر في الفيديو المصدّر" />
+            <input
+              id="reportTitle"
+              class="rf-input"
+              type="text"
+              placeholder="اضف سؤالك وسيتم الرد عليك"
+            />
           </div>
 
           <!-- التفاصيل -->
           <div>
             <label class="rf-label">التفاصيل <span>*</span></label>
-            <textarea id="reportDetails" class="rf-textarea" placeholder="اشرح المشكلة أو الاقتراح بالتفصيل... كلما كان الوصف دقيقاً، كلما تمكنا من مساعدتك بشكل أفضل."></textarea>
+            <textarea
+              id="reportDetails"
+              class="rf-textarea"
+              placeholder="اشرح المشكلة أو الاقتراح بالتفصيل... كلما كان الوصف دقيقاً، كلما تمكنا من مساعدتك بشكل أفضل."
+            ></textarea>
           </div>
 
           <!-- البريد الإلكتروني -->
           <div>
-            <label class="rf-label">بريدك الإلكتروني (اختياري - للرد عليك)</label>
-            <input id="reportEmail" class="rf-input" type="email" placeholder="example@email.com" />
+            <label class="rf-label"
+              >بريدك الإلكتروني (اختياري - للرد عليك)</label
+            >
+            <input
+              id="reportEmail"
+              class="rf-input"
+              type="email"
+              placeholder="example@email.com"
+            />
           </div>
 
           <!-- لقطة شاشة -->
           <div>
             <label class="rf-label">لقطة شاشة (اختياري)</label>
-            <div id="reportScreenshotArea" onclick="document.getElementById('reportFileInput').click()">
+            <div
+              id="reportScreenshotArea"
+              onclick="document.getElementById('reportFileInput').click()"
+            >
               <div class="ss-icon">🖼</div>
               <div>انقر لرفع لقطة شاشة</div>
-              <input id="reportFileInput" type="file" accept="image/*" onchange="handleSSUpload(event)" />
+              <input
+                id="reportFileInput"
+                type="file"
+                accept="image/*"
+                onchange="handleSSUpload(event)"
+              />
             </div>
             <div id="ssPreview">
               <img id="ssImg" src="" alt="لقطة الشاشة" />
@@ -20052,10 +20168,12 @@ If you want to offset all timestamps of a track such that the first one is zero,
 
           <!-- معلومات الجهاز -->
           <div class="rf-device-note">
-            <span>ℹ</span>
-            <span>سيتم إرسال معلومات النظام (المتصفح، الجهاز) تلقائياً لمساعدتنا في تشخيص المشكلة بشكل أسرع.</span>
+            <!-- <span>ℹ</span> -->
+            <span style="font-size: 10px"
+              >سيتم إرسال معلومات النظام (المتصفح، الجهاز) تلقائياً لمساعدتنا في
+              تشخيص المشكلة بشكل أسرع.</span
+            >
           </div>
-
         </div>
 
         <!-- زر الإرسال -->
@@ -20067,153 +20185,194 @@ If you want to offset all timestamps of a track such that the first one is zero,
         <div id="reportSuccess">
           <div class="rs-anim">✅</div>
           <h3>تم الإرسال بنجاح!</h3>
-          <p>شكراً لك على تواصلك معنا.<br>سيقوم فريقنا بمراجعة ملاحظتك في أقرب وقت.</p>
-          <button id="reportSuccessClose" onclick="closeReportPanel()">إغلاق</button>
+          <p>
+            شكراً لك على تواصلك معنا.<br />سيقوم فريقنا بمراجعة ملاحظتك في أقرب
+            وقت.
+          </p>
+          <button id="reportSuccessClose" onclick="closeReportPanel()">
+            إغلاق
+          </button>
         </div>
-
       </div>
     </div>
 
     <script>
-    (function(){
-      var selectedType = '';
-      var ssFile = null;
-      var ssBase64 = '';
+      (function () {
+        var selectedType = "";
+        var ssFile = null;
+        var ssBase64 = "";
 
-      var CLOUDINARY_CLOUD = 'dknscghln';
-      var CLOUDINARY_PRESET = 'img13564149';
+        var CLOUDINARY_CLOUD = "dknscghln";
+        var CLOUDINARY_PRESET = "img13564149";
 
-      window.openReportPanel = function(){
-        document.getElementById('reportOverlay').classList.add('open');
-      };
-      window.closeReportPanel = function(){
-        document.getElementById('reportOverlay').classList.remove('open');
-        setTimeout(resetReportForm, 400);
-      };
-      window.overlayClickReport = function(e){
-        if(e.target === document.getElementById('reportOverlay')) closeReportPanel();
-      };
-
-      window.selectRType = function(btn){
-        document.querySelectorAll('.rtype-btn').forEach(function(b){ b.classList.remove('active'); });
-        btn.classList.add('active');
-        selectedType = btn.getAttribute('data-type');
-      };
-
-      window.handleSSUpload = function(e){
-        var file = e.target.files[0];
-        if(!file) return;
-        ssFile = file;
-        var reader = new FileReader();
-        reader.onload = function(ev){
-          ssBase64 = ev.target.result;
-          document.getElementById('ssImg').src = ssBase64;
-          document.getElementById('ssPreview').style.display = 'block';
-          document.getElementById('reportScreenshotArea').style.display = 'none';
+        window.openReportPanel = function () {
+          document.getElementById("reportOverlay").classList.add("open");
         };
-        reader.readAsDataURL(file);
-      };
+        window.closeReportPanel = function () {
+          document.getElementById("reportOverlay").classList.remove("open");
+          setTimeout(resetReportForm, 400);
+        };
+        window.overlayClickReport = function (e) {
+          if (e.target === document.getElementById("reportOverlay"))
+            closeReportPanel();
+        };
 
-      window.removeScreenshot = function(){
-        ssFile = null;
-        ssBase64 = '';
-        document.getElementById('ssImg').src = '';
-        document.getElementById('ssPreview').style.display = 'none';
-        document.getElementById('reportScreenshotArea').style.display = 'block';
-        document.getElementById('reportFileInput').value = '';
-      };
+        window.selectRType = function (btn) {
+          document.querySelectorAll(".rtype-btn").forEach(function (b) {
+            b.classList.remove("active");
+          });
+          btn.classList.add("active");
+          selectedType = btn.getAttribute("data-type");
+        };
 
-      function uploadToCloudinary(file, callback){
-        var formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', CLOUDINARY_PRESET);
-        fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/image/upload', {
-          method: 'POST',
-          body: formData
-        })
-        .then(function(r){ return r.json(); })
-        .then(function(data){
-          callback(null, data.secure_url || null);
-        })
-        .catch(function(err){
-          callback(err, null);
-        });
-      }
-
-      window.submitReportForm = function(){
-        var title   = (document.getElementById('reportTitle').value || '').trim();
-        var details = (document.getElementById('reportDetails').value || '').trim();
-        var email   = (document.getElementById('reportEmail').value || '').trim();
-
-        if(!selectedType){ alert('من فضلك اختر نوع الملاحظة'); return; }
-        if(!title)        { alert('من فضلك اكتب عنوان المشكلة'); return; }
-        if(!details)      { alert('من فضلك اكتب تفاصيل المشكلة'); return; }
-
-        var btn = document.getElementById('reportSubmitBtn');
-        btn.disabled = true;
-        btn.innerHTML = '⏳ جاري الإرسال...';
-
-        var deviceInfo = [
-          'المتصفح: ' + navigator.userAgent.substring(0,120),
-          'الصفحة: ' + location.href,
-          'الوقت: ' + new Date().toLocaleString('ar-EG'),
-          'الشاشة: ' + screen.width + 'x' + screen.height
-        ].join('\n');
-
-        function sendEmail(screenshotUrl){
-          var templateParams = {
-            name:           email ? email : 'مستخدم Islam Reels',
-            report_type:    selectedType,
-            report_title:   title,
-            report_details: details,
-            user_email:     email || 'لم يُذكر',
-            device_info:    deviceInfo,
-            screenshot_url: screenshotUrl || 'لا يوجد'
+        window.handleSSUpload = function (e) {
+          var file = e.target.files[0];
+          if (!file) return;
+          ssFile = file;
+          var reader = new FileReader();
+          reader.onload = function (ev) {
+            ssBase64 = ev.target.result;
+            document.getElementById("ssImg").src = ssBase64;
+            document.getElementById("ssPreview").style.display = "block";
+            document.getElementById("reportScreenshotArea").style.display =
+              "none";
           };
+          reader.readAsDataURL(file);
+        };
 
-          emailjs.send('service_dvil5es', 'template_33bim5n', templateParams)
-            .then(function(){
-              document.getElementById('reportBody').style.display = 'none';
-              btn.style.display = 'none';
-              document.getElementById('reportSuccess').style.display = 'flex';
+        window.removeScreenshot = function () {
+          ssFile = null;
+          ssBase64 = "";
+          document.getElementById("ssImg").src = "";
+          document.getElementById("ssPreview").style.display = "none";
+          document.getElementById("reportScreenshotArea").style.display =
+            "block";
+          document.getElementById("reportFileInput").value = "";
+        };
+
+        function uploadToCloudinary(file, callback) {
+          var formData = new FormData();
+          formData.append("file", file);
+          formData.append("upload_preset", CLOUDINARY_PRESET);
+          fetch(
+            "https://api.cloudinary.com/v1_1/" +
+              CLOUDINARY_CLOUD +
+              "/image/upload",
+            {
+              method: "POST",
+              body: formData,
+            },
+          )
+            .then(function (r) {
+              return r.json();
             })
-            .catch(function(err){
-              btn.disabled = false;
-              btn.innerHTML = '<span>📨</span> إرسال الملاحظة';
-              alert('حدث خطأ في الإرسال، يرجى المحاولة مرة أخرى.\n' + JSON.stringify(err));
+            .then(function (data) {
+              callback(null, data.secure_url || null);
+            })
+            .catch(function (err) {
+              callback(err, null);
             });
         }
 
-        if(ssFile){
-          btn.innerHTML = '⏳ جاري رفع الصورة...';
-          uploadToCloudinary(ssFile, function(err, url){
-            if(err || !url){
-              sendEmail('فشل رفع الصورة');
-            } else {
-              sendEmail(url);
-            }
-          });
-        } else {
-          sendEmail(null);
-        }
-      };
+        window.submitReportForm = function () {
+          var title = (
+            document.getElementById("reportTitle").value || ""
+          ).trim();
+          var details = (
+            document.getElementById("reportDetails").value || ""
+          ).trim();
+          var email = (
+            document.getElementById("reportEmail").value || ""
+          ).trim();
 
-      function resetReportForm(){
-        selectedType = '';
-        ssFile = null;
-        ssBase64 = '';
-        document.querySelectorAll('.rtype-btn').forEach(function(b){ b.classList.remove('active'); });
-        ['reportTitle','reportDetails','reportEmail'].forEach(function(id){
-          var el = document.getElementById(id); if(el) el.value = '';
-        });
-        removeScreenshot();
-        document.getElementById('reportBody').style.display = 'flex';
-        document.getElementById('reportSubmitBtn').style.display = 'flex';
-        document.getElementById('reportSubmitBtn').disabled = false;
-        document.getElementById('reportSubmitBtn').innerHTML = '<span>📨</span> إرسال الملاحظة';
-        document.getElementById('reportSuccess').style.display = 'none';
-      }
-    })();
+          if (!selectedType) {
+            alert("من فضلك اختر نوع الملاحظة");
+            return;
+          }
+          if (!title) {
+            alert("من فضلك اكتب عنوان المشكلة");
+            return;
+          }
+          if (!details) {
+            alert("من فضلك اكتب تفاصيل المشكلة");
+            return;
+          }
+
+          var btn = document.getElementById("reportSubmitBtn");
+          btn.disabled = true;
+          btn.innerHTML = "⏳ جاري الإرسال...";
+
+          var deviceInfo = [
+            "المتصفح: " + navigator.userAgent.substring(0, 120),
+            "الصفحة: " + location.href,
+            "الوقت: " + new Date().toLocaleString("ar-EG"),
+            "الشاشة: " + screen.width + "x" + screen.height,
+          ].join("\n");
+
+          function sendEmail(screenshotUrl) {
+            var templateParams = {
+              name: email ? email : "مستخدم Islam Reels",
+              report_type: selectedType,
+              report_title: title,
+              report_details: details,
+              user_email: email || "لم يُذكر",
+              device_info: deviceInfo,
+              screenshot_url: screenshotUrl || "لا يوجد",
+            };
+
+            emailjs
+              .send("service_dvil5es", "template_33bim5n", templateParams)
+              .then(function () {
+                document.getElementById("reportBody").style.display = "none";
+                btn.style.display = "none";
+                document.getElementById("reportSuccess").style.display = "flex";
+              })
+              .catch(function (err) {
+                btn.disabled = false;
+                btn.innerHTML = "<span>📨</span> إرسال الملاحظة";
+                alert(
+                  "حدث خطأ في الإرسال، يرجى المحاولة مرة أخرى.\n" +
+                    JSON.stringify(err),
+                );
+              });
+          }
+
+          if (ssFile) {
+            btn.innerHTML = "⏳ جاري رفع الصورة...";
+            uploadToCloudinary(ssFile, function (err, url) {
+              if (err || !url) {
+                sendEmail("فشل رفع الصورة");
+              } else {
+                sendEmail(url);
+              }
+            });
+          } else {
+            sendEmail(null);
+          }
+        };
+
+        function resetReportForm() {
+          selectedType = "";
+          ssFile = null;
+          ssBase64 = "";
+          document.querySelectorAll(".rtype-btn").forEach(function (b) {
+            b.classList.remove("active");
+          });
+          ["reportTitle", "reportDetails", "reportEmail"].forEach(
+            function (id) {
+              var el = document.getElementById(id);
+              if (el) el.value = "";
+            },
+          );
+          removeScreenshot();
+          document.getElementById("reportBody").style.display = "flex";
+          document.getElementById("reportSubmitBtn").style.display = "flex";
+          document.getElementById("reportSubmitBtn").disabled = false;
+          document.getElementById("reportSubmitBtn").innerHTML =
+            "<span>📨</span> إرسال الملاحظة";
+          document.getElementById("reportSuccess").style.display = "none";
+        }
+      })();
     </script>
   </body>
 </html>
