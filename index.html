@@ -33,11 +33,36 @@
     <link rel="apple-touch-icon" href="./icons/icon-152.png" />
     <link rel="apple-touch-icon" sizes="152x152" href="./icons/icon-152.png" />
     <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192.png" />
-    <link rel="icon" type="image/png" sizes="72x72"  href="./icons/icon-72.png" />
-    <link rel="icon" type="image/png" sizes="96x96"  href="./icons/icon-96.png" />
-    <link rel="icon" type="image/png" sizes="128x128" href="./icons/icon-128.png" />
-    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
-    <link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="72x72"
+      href="./icons/icon-72.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="96x96"
+      href="./icons/icon-96.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="128x128"
+      href="./icons/icon-128.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="./icons/icon-192.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="512x512"
+      href="./icons/icon-512.png"
+    />
     <title>Islam Reels ✨</title>
 
     <!-- mp4-muxer مضمّن inline — يعمل بدون CDN على iOS وكل الأجهزة -->
@@ -6512,8 +6537,8 @@ If you want to offset all timestamps of a track such that the first one is zero,
             <div class="lp-card-icon">🎙️</div>
             <h3 class="lp-card-title">تلاوات بأجمل الأصوات</h3>
             <p class="lp-card-desc">
-              استمع لكبار القرّاء — الشيخ مشاري، ياسر الدوسري، وأكثر من 7 قارئاً
-              مع اضافه المزيد
+              استمع لكبار القرّاء — الشيخ مشاري، ياسر الدوسري، وأكثر من 30
+              قارئاً مع اضافه المزيد
             </p>
           </div>
           <div class="lp-card">
@@ -6628,13 +6653,6 @@ If you want to offset all timestamps of a track such that the first one is zero,
         const SEEN_KEY = "wn_seen_" + VERSION;
 
         var features = [
-          {
-            icon: "📿",
-            title: "ريلز اذكار",
-            desc: "تبويب جديد مخصص لاذكار الصباح والمساء وادعيه قراّنية -صمم ريلز يوميه جاهزه للنشر بضغطه زر",
-            badge: "جديد",
-            color: "#c9973a",
-          },
           {
             icon: "🎙️",
             title: "أضف صوتك وحوّله لريلز",
@@ -7835,7 +7853,6 @@ If you want to offset all timestamps of a track such that the first one is zero,
             </div>
           </div>
 
-
           <div class="player">
             <div class="pt">
               <div class="np-i">
@@ -8410,7 +8427,7 @@ If you want to offset all timestamps of a track such that the first one is zero,
                 type="text"
                 class="inp"
                 id="wmTextInp"
-                placeholder="@اسم_القناة"
+                placeholder="اسمك"
                 style="margin-bottom: 8px"
                 oninput="
                   document.getElementById('elWm').textContent = this.value;
@@ -8786,87 +8803,272 @@ If you want to offset all timestamps of a track such that the first one is zero,
             </div>
             <!-- جودة التصدير -->
             <div style="margin-bottom: 10px; position: relative">
-              <div style="font-size: 10px; color: #6e8878; margin-bottom: 5px">جودة التصدير</div>
+              <div style="font-size: 10px; color: #6e8878; margin-bottom: 5px">
+                جودة التصدير
+              </div>
               <!-- Preset trigger button -->
-              <div id="presetTrigger" onclick="togglePresetDropdown()"
-                style="display:flex;align-items:center;gap:8px;padding:8px 12px;
-                       background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
-                       border-radius:8px;cursor:pointer;user-select:none;transition:.2s;"
-                onmouseover="this.style.background='rgba(201,151,58,.07)'"
-                onmouseout="this.style.background='rgba(255,255,255,.05)'">
-                <span id="presetTriggerIcon" style="font-size:16px;flex-shrink:0;">🎬</span>
-                <div style="flex:1;min-width:0;">
-                  <div id="presetTriggerLabel" style="font-size:12px;font-weight:700;color:#c8d8cc;">شورتس قياسي</div>
-                  <div id="presetTriggerTag" style="font-size:10px;color:#6e8878;">1080p · 30fps · 4Mbps</div>
+              <div
+                id="presetTrigger"
+                onclick="togglePresetDropdown()"
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  padding: 8px 12px;
+                  background: rgba(255, 255, 255, 0.05);
+                  border: 1px solid rgba(255, 255, 255, 0.1);
+                  border-radius: 8px;
+                  cursor: pointer;
+                  user-select: none;
+                  transition: 0.2s;
+                "
+                onmouseover="this.style.background = 'rgba(201,151,58,.07)'"
+                onmouseout="this.style.background = 'rgba(255,255,255,.05)'"
+              >
+                <span
+                  id="presetTriggerIcon"
+                  style="font-size: 16px; flex-shrink: 0"
+                  >🎬</span
+                >
+                <div style="flex: 1; min-width: 0">
+                  <div
+                    id="presetTriggerLabel"
+                    style="font-size: 12px; font-weight: 700; color: #c8d8cc"
+                  >
+                    شورتس قياسي
+                  </div>
+                  <div
+                    id="presetTriggerTag"
+                    style="font-size: 10px; color: #6e8878"
+                  >
+                    1080p · 30fps · 4Mbps
+                  </div>
                 </div>
-                <span id="presetDropArrow" style="color:#6e8878;font-size:10px;transition:transform .2s;">▼</span>
+                <span
+                  id="presetDropArrow"
+                  style="
+                    color: #6e8878;
+                    font-size: 10px;
+                    transition: transform 0.2s;
+                  "
+                  >▼</span
+                >
               </div>
               <!-- Dropdown -->
-              <div id="presetDropMenu"
-                style="display:none;position:absolute;bottom:calc(100% + 4px);right:0;left:0;z-index:200;
-                       background:#0e2018;border:1px solid rgba(201,151,58,.25);border-radius:10px;
-                       overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.6);max-height:280px;overflow-y:auto;">
-              </div>
+              <div
+                id="presetDropMenu"
+                style="
+                  display: none;
+                  position: absolute;
+                  bottom: calc(100% + 4px);
+                  right: 0;
+                  left: 0;
+                  z-index: 200;
+                  background: #0e2018;
+                  border: 1px solid rgba(201, 151, 58, 0.25);
+                  border-radius: 10px;
+                  overflow: hidden;
+                  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+                  max-height: 280px;
+                  overflow-y: auto;
+                "
+              ></div>
             </div>
 
             <!-- custom preset row -->
-            <div id="customPresetRow" style="display:none;padding:10px;background:rgba(255,255,255,.03);
-                 border:1px solid rgba(255,255,255,.08);border-radius:8px;margin-bottom:10px;">
-              <div style="font-size:10px;color:#6e8878;margin-bottom:8px;">⚙️ إعدادات مخصصة</div>
+            <div
+              id="customPresetRow"
+              style="
+                display: none;
+                padding: 10px;
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 8px;
+                margin-bottom: 10px;
+              "
+            >
+              <div style="font-size: 10px; color: #6e8878; margin-bottom: 8px">
+                ⚙️ إعدادات مخصصة
+              </div>
 
               <!-- العرض والارتفاع -->
-              <div style="display:flex;gap:6px;margin-bottom:6px;">
-                <div style="flex:1;">
-                  <div style="font-size:9px;color:#6e8878;margin-bottom:3px;">العرض (px)</div>
-                  <input id="cpW" type="number" value="1080" min="240" max="3840" step="1"
+              <div style="display: flex; gap: 6px; margin-bottom: 6px">
+                <div style="flex: 1">
+                  <div
+                    style="font-size: 9px; color: #6e8878; margin-bottom: 3px"
+                  >
+                    العرض (px)
+                  </div>
+                  <input
+                    id="cpW"
+                    type="number"
+                    value="1080"
+                    min="240"
+                    max="3840"
+                    step="1"
                     onchange="updateCustomPreset()"
-                    style="width:100%;background:#0c1810;border:1px solid rgba(255,255,255,.12);
-                           border-radius:6px;color:#c8d8cc;font-size:11px;padding:5px 7px;box-sizing:border-box;"/>
+                    style="
+                      width: 100%;
+                      background: #0c1810;
+                      border: 1px solid rgba(255, 255, 255, 0.12);
+                      border-radius: 6px;
+                      color: #c8d8cc;
+                      font-size: 11px;
+                      padding: 5px 7px;
+                      box-sizing: border-box;
+                    "
+                  />
                 </div>
-                <div style="flex:1;">
-                  <div style="font-size:9px;color:#6e8878;margin-bottom:3px;">الارتفاع (px)</div>
-                  <input id="cpH" type="number" value="1920" min="240" max="3840" step="1"
+                <div style="flex: 1">
+                  <div
+                    style="font-size: 9px; color: #6e8878; margin-bottom: 3px"
+                  >
+                    الارتفاع (px)
+                  </div>
+                  <input
+                    id="cpH"
+                    type="number"
+                    value="1920"
+                    min="240"
+                    max="3840"
+                    step="1"
                     onchange="updateCustomPreset()"
-                    style="width:100%;background:#0c1810;border:1px solid rgba(255,255,255,.12);
-                           border-radius:6px;color:#c8d8cc;font-size:11px;padding:5px 7px;box-sizing:border-box;"/>
+                    style="
+                      width: 100%;
+                      background: #0c1810;
+                      border: 1px solid rgba(255, 255, 255, 0.12);
+                      border-radius: 6px;
+                      color: #c8d8cc;
+                      font-size: 11px;
+                      padding: 5px 7px;
+                      box-sizing: border-box;
+                    "
+                  />
                 </div>
               </div>
 
               <!-- FPS والـ Bitrate -->
-              <div style="display:flex;gap:6px;margin-bottom:8px;">
-                <div style="flex:1;">
-                  <div style="font-size:9px;color:#6e8878;margin-bottom:3px;">FPS</div>
-                  <select id="cpFps" onchange="updateCustomPreset()"
-                    style="width:100%;background:#0c1810;border:1px solid rgba(255,255,255,.12);
-                           border-radius:6px;color:#c8d8cc;font-size:11px;padding:5px 6px;">
+              <div style="display: flex; gap: 6px; margin-bottom: 8px">
+                <div style="flex: 1">
+                  <div
+                    style="font-size: 9px; color: #6e8878; margin-bottom: 3px"
+                  >
+                    FPS
+                  </div>
+                  <select
+                    id="cpFps"
+                    onchange="updateCustomPreset()"
+                    style="
+                      width: 100%;
+                      background: #0c1810;
+                      border: 1px solid rgba(255, 255, 255, 0.12);
+                      border-radius: 6px;
+                      color: #c8d8cc;
+                      font-size: 11px;
+                      padding: 5px 6px;
+                    "
+                  >
                     <option value="24">24</option>
                     <option value="30" selected>30</option>
                     <option value="60">60</option>
                   </select>
                 </div>
-                <div style="flex:1;">
-                  <div style="font-size:9px;color:#6e8878;margin-bottom:3px;">Bitrate (Mbps)</div>
-                  <input id="cpBr" type="number" value="4" min="0.5" max="30" step="0.5"
+                <div style="flex: 1">
+                  <div
+                    style="font-size: 9px; color: #6e8878; margin-bottom: 3px"
+                  >
+                    Bitrate (Mbps)
+                  </div>
+                  <input
+                    id="cpBr"
+                    type="number"
+                    value="4"
+                    min="0.5"
+                    max="30"
+                    step="0.5"
                     onchange="updateCustomPreset()"
-                    style="width:100%;background:#0c1810;border:1px solid rgba(255,255,255,.12);
-                           border-radius:6px;color:#c8d8cc;font-size:11px;padding:5px 7px;box-sizing:border-box;"/>
+                    style="
+                      width: 100%;
+                      background: #0c1810;
+                      border: 1px solid rgba(255, 255, 255, 0.12);
+                      border-radius: 6px;
+                      color: #c8d8cc;
+                      font-size: 11px;
+                      padding: 5px 7px;
+                      box-sizing: border-box;
+                    "
+                  />
                 </div>
               </div>
 
               <!-- اختصارات سريعة -->
-              <div style="font-size:9px;color:#6e8878;margin-bottom:4px;">اختصارات سريعة:</div>
-              <div style="display:flex;gap:4px;flex-wrap:wrap;">
-                <button onclick="_setCustomQuick(480,854,30,1.2)" style="font-size:9px;padding:3px 7px;background:rgba(201,151,58,.1);border:1px solid rgba(201,151,58,.3);border-radius:4px;color:#c9973a;cursor:pointer;">480p</button>
-                <button onclick="_setCustomQuick(720,1280,30,2)" style="font-size:9px;padding:3px 7px;background:rgba(201,151,58,.1);border:1px solid rgba(201,151,58,.3);border-radius:4px;color:#c9973a;cursor:pointer;">720p</button>
-                <button onclick="_setCustomQuick(1080,1920,30,4)" style="font-size:9px;padding:3px 7px;background:rgba(201,151,58,.1);border:1px solid rgba(201,151,58,.3);border-radius:4px;color:#c9973a;cursor:pointer;">1080p</button>
-                <button onclick="_setCustomQuick(1080,1920,60,6)" style="font-size:9px;padding:3px 7px;background:rgba(201,151,58,.1);border:1px solid rgba(201,151,58,.3);border-radius:4px;color:#c9973a;cursor:pointer;">1080p60</button>
+              <div style="font-size: 9px; color: #6e8878; margin-bottom: 4px">
+                اختصارات سريعة:
+              </div>
+              <div style="display: flex; gap: 4px; flex-wrap: wrap">
+                <button
+                  onclick="_setCustomQuick(480, 854, 30, 1.2)"
+                  style="
+                    font-size: 9px;
+                    padding: 3px 7px;
+                    background: rgba(201, 151, 58, 0.1);
+                    border: 1px solid rgba(201, 151, 58, 0.3);
+                    border-radius: 4px;
+                    color: #c9973a;
+                    cursor: pointer;
+                  "
+                >
+                  480p
+                </button>
+                <button
+                  onclick="_setCustomQuick(720, 1280, 30, 2)"
+                  style="
+                    font-size: 9px;
+                    padding: 3px 7px;
+                    background: rgba(201, 151, 58, 0.1);
+                    border: 1px solid rgba(201, 151, 58, 0.3);
+                    border-radius: 4px;
+                    color: #c9973a;
+                    cursor: pointer;
+                  "
+                >
+                  720p
+                </button>
+                <button
+                  onclick="_setCustomQuick(1080, 1920, 30, 4)"
+                  style="
+                    font-size: 9px;
+                    padding: 3px 7px;
+                    background: rgba(201, 151, 58, 0.1);
+                    border: 1px solid rgba(201, 151, 58, 0.3);
+                    border-radius: 4px;
+                    color: #c9973a;
+                    cursor: pointer;
+                  "
+                >
+                  1080p
+                </button>
+                <button
+                  onclick="_setCustomQuick(1080, 1920, 60, 6)"
+                  style="
+                    font-size: 9px;
+                    padding: 3px 7px;
+                    background: rgba(201, 151, 58, 0.1);
+                    border: 1px solid rgba(201, 151, 58, 0.3);
+                    border-radius: 4px;
+                    color: #c9973a;
+                    cursor: pointer;
+                  "
+                >
+                  1080p60
+                </button>
               </div>
 
               <!-- hidden selects للتوافق مع الكود القديم -->
-              <select id="s-qual" style="display:none;">
+              <select id="s-qual" style="display: none">
                 <option value="4000000" selected>4 Mbps</option>
               </select>
-              <select id="s-fps" style="display:none;">
+              <select id="s-fps" style="display: none">
                 <option value="30" selected>30</option>
               </select>
             </div>
@@ -9963,9 +10165,14 @@ If you want to offset all timestamps of a track such that the first one is zero,
           document.getElementById("cas-reciter-name")?.value?.trim() || "";
         CSTATE.shName = elShText || (casName ? "تلاوة: " + casName : "");
         CSTATE.watermark = document.getElementById("elWm")?.textContent || "";
-        CSTATE.wmSize = parseFloat(document.getElementById("wmSizeSlider")?.value || "28");
-        CSTATE.wmOpacity = parseFloat(document.getElementById("wmOpacSlider")?.value || "28") / 100;
-        CSTATE.wmPos = document.getElementById("wmPosSelect")?.value || "bottom";
+        CSTATE.wmSize = parseFloat(
+          document.getElementById("wmSizeSlider")?.value || "28",
+        );
+        CSTATE.wmOpacity =
+          parseFloat(document.getElementById("wmOpacSlider")?.value || "28") /
+          100;
+        CSTATE.wmPos =
+          document.getElementById("wmPosSelect")?.value || "bottom";
         CSTATE.color = S.color || "#fff";
         CSTATE.fontSize = S.size || 14;
         const fontMap = {
@@ -10741,11 +10948,12 @@ If you want to offset all timestamps of a track such that the first one is zero,
           } else {
             wmY = canvas.height - 80;
           }
-          const wmX = wmPos === "left"
-            ? canvas.width - 20
-            : wmPos === "right"
-            ? 20
-            : canvas.width / 2;
+          const wmX =
+            wmPos === "left"
+              ? canvas.width - 20
+              : wmPos === "right"
+                ? 20
+                : canvas.width / 2;
           ctx.fillText(CSTATE.watermark, wmX, wmY);
           ctx.shadowBlur = 0;
           ctx.textAlign = "center";
@@ -10768,7 +10976,14 @@ If you want to offset all timestamps of a track such that the first one is zero,
             grad.addColorStop(1, "rgba(201,151,58,0.3)");
             ctx.fillStyle = grad;
             ctx.beginPath();
-            _safeRoundRect(ctx, bx, baseY - bh, barW, bh, Math.round(2 * _wScale));
+            _safeRoundRect(
+              ctx,
+              bx,
+              baseY - bh,
+              barW,
+              bh,
+              Math.round(2 * _wScale),
+            );
             ctx.fill();
             bx += barW + gap;
           }
@@ -11494,7 +11709,7 @@ If you want to offset all timestamps of a track such that the first one is zero,
 
         // ── تقسيم الترجمة بنسبة كلمات كل مقطع ──
         const _needTrans = !!window._translationEnabled;
-        const _fullEn = _needTrans ? (vd.enText || "") : "";
+        const _fullEn = _needTrans ? vd.enText || "" : "";
         window._fullEnTranslation = _fullEn;
         if (_fullEn && verseChunks.length > 1) {
           const enWords = _fullEn.trim().split(/\s+/).filter(Boolean);
@@ -11502,9 +11717,10 @@ If you want to offset all timestamps of a track such that the first one is zero,
           let enIdx = 0;
           window._chunkTranslations = verseChunks.map((ch, ci) => {
             const ratio = ch.words.length / totalAr;
-            let count = (ci === verseChunks.length - 1)
-              ? enWords.length - enIdx
-              : Math.round(ratio * enWords.length);
+            let count =
+              ci === verseChunks.length - 1
+                ? enWords.length - enIdx
+                : Math.round(ratio * enWords.length);
             count = Math.max(1, count);
             const slice = enWords.slice(enIdx, enIdx + count).join(" ");
             enIdx = Math.min(enIdx + count, enWords.length);
@@ -11517,7 +11733,9 @@ If you want to offset all timestamps of a track such that the first one is zero,
         showChunk(0, true);
         markCstateDirty();
         // تعيين الترجمة للمقطع الأول
-        CSTATE.translation = _needTrans ? (window._chunkTranslations?.[0] || _fullEn) : "";
+        CSTATE.translation = _needTrans
+          ? window._chunkTranslations?.[0] || _fullEn
+          : "";
         window._lastTranslationText = CSTATE.translation;
       }
 
@@ -11539,9 +11757,11 @@ If you want to offset all timestamps of a track such that the first one is zero,
         syncCSTATE();
         // ضمان الترجمة أثناء التصدير: استخدم ترجمة المقطع الحالي
         if (isExporting && vd && vd.enText && window._translationEnabled) {
-          CSTATE.translation = (window._chunkTranslations && window._chunkTranslations[currentChunkIdx])
-            || window._lastTranslationText
-            || vd.enText;
+          CSTATE.translation =
+            (window._chunkTranslations &&
+              window._chunkTranslations[currentChunkIdx]) ||
+            window._lastTranslationText ||
+            vd.enText;
         }
         drawFrameDirect();
         return -1;
@@ -12220,14 +12440,23 @@ If you want to offset all timestamps of a track such that the first one is zero,
                   if (seg) {
                     // seg[1] = startMs نسبي للآية
                     const timeSec = seg[1] / 1000;
-                    frame = Math.max(1, Math.min(Math.round(timeSec * FPS), totalFrames - 1));
+                    frame = Math.max(
+                      1,
+                      Math.min(Math.round(timeSec * FPS), totalFrames - 1),
+                    );
                   }
                 }
                 if (!frame) {
                   // fallback توزيع بالنسبة
-                  const totalWords = verseChunks.reduce((s, c) => s + c.words.length, 0);
+                  const totalWords = verseChunks.reduce(
+                    (s, c) => s + c.words.length,
+                    0,
+                  );
                   const fpw = totalFrames / totalWords;
-                  frame = Math.max(1, Math.min(Math.round(firstWordIdx * fpw), totalFrames - 1));
+                  frame = Math.max(
+                    1,
+                    Math.min(Math.round(firstWordIdx * fpw), totalFrames - 1),
+                  );
                 }
                 window._expChunkAt.push({ f: frame, ci });
               }
@@ -12300,8 +12529,11 @@ If you want to offset all timestamps of a track such that the first one is zero,
                   duration: frameDurUs,
                 });
               }
-              const _kfInterval = currentPreset === "sh_480" ? FPS * 3 : FPS * 2;
-              videoEnc.encode(vf, { keyFrame: globalFrame % _kfInterval === 0 });
+              const _kfInterval =
+                currentPreset === "sh_480" ? FPS * 3 : FPS * 2;
+              videoEnc.encode(vf, {
+                keyFrame: globalFrame % _kfInterval === 0,
+              });
               vf.close();
             } catch (vfErr) {
               console.warn(
@@ -12594,13 +12826,25 @@ If you want to offset all timestamps of a track such that the first one is zero,
                 if (expSegs2 && expSegs2.length) {
                   const seg = expSegs2.find(([wi]) => wi === firstWordIdx);
                   if (seg) {
-                    frame = Math.max(1, Math.min(Math.round((seg[1] / 1000) * FPS), totalFrames2 - 1));
+                    frame = Math.max(
+                      1,
+                      Math.min(
+                        Math.round((seg[1] / 1000) * FPS),
+                        totalFrames2 - 1,
+                      ),
+                    );
                   }
                 }
                 if (!frame) {
-                  const tw2 = verseChunks.reduce((s, c) => s + c.words.length, 0);
+                  const tw2 = verseChunks.reduce(
+                    (s, c) => s + c.words.length,
+                    0,
+                  );
                   const fpw2 = totalFrames2 / tw2;
-                  frame = Math.max(1, Math.min(Math.round(firstWordIdx * fpw2), totalFrames2 - 1));
+                  frame = Math.max(
+                    1,
+                    Math.min(Math.round(firstWordIdx * fpw2), totalFrames2 - 1),
+                  );
                 }
                 window._expChunkAt.push({ f: frame, ci });
               }
@@ -12625,7 +12869,7 @@ If you want to offset all timestamps of a track such that the first one is zero,
              - iOS: 0.80 — أسرع
              - باقي الـ presets: 0.90 */
           const _isLightPreset = currentPreset === "sh_480";
-          const _jpegQ = _isIOS ? 0.80 : _isLightPreset ? 0.75 : 0.90;
+          const _jpegQ = _isIOS ? 0.8 : _isLightPreset ? 0.75 : 0.9;
           for (let f = 0; f < ayahFrames; f++) {
             if (_expAbort) break;
             window._expGlobalFrame = globalFrame;
@@ -13048,6 +13292,260 @@ If you want to offset all timestamps of a track such that the first one is zero,
           name: "عبدالله بصفر",
           flag: "🇸🇦",
           country: "السعودية",
+        },
+        {
+          folder: "Ghamadi_40kbps",
+          islamicId: "ar.ghamadi",
+          versesId: "Ghamadi",
+          qdcId: 8,
+          name: "سعد الغامدي",
+          flag: "🇸🇦",
+          country: "السعودية",
+        },
+        {
+          folder: "Ahmed_ibn_Ali_al-Ajamy_128kbps",
+          islamicId: "ar.ahmedajamy",
+          versesId: "Ajamy",
+          qdcId: 5,
+          name: "أحمد العجمي",
+          flag: "🇸🇦",
+          country: "السعودية",
+        },
+        {
+          folder: "Nasser_Alqatami_128kbps",
+          islamicId: "ar.nasseralqatami",
+          versesId: "NasserAlqatami",
+          qdcId: 11,
+          name: "ناصر القطامي",
+          flag: "🇸🇦",
+          country: "السعودية",
+        },
+        {
+          folder: "Fares_Abbad_64kbps",
+          islamicId: "ar.faresabbad",
+          versesId: "FaresAbbad",
+          qdcId: 14,
+          name: "فارس عباد",
+          flag: "🇾🇪",
+          country: "اليمن",
+        },
+        {
+          folder: "Hani_Rifai_192kbps",
+          islamicId: "ar.hanirifai",
+          versesId: "HaniRifai",
+          qdcId: 16,
+          name: "هاني الرفاعي",
+          flag: "🇸🇦",
+          country: "السعودية",
+        },
+        {
+          folder: "Mahmoud_Al-Husary_64kbps",
+          islamicId: "ar.husary",
+          versesId: "Husary",
+          qdcId: 9,
+          name: "الحصري (جودة منخفضة)",
+          flag: "🇪🇬",
+          country: "مصر",
+        },
+        {
+          folder: "Khaled_Al-Qahtani_128kbps",
+          islamicId: "ar.khaledqahtani",
+          versesId: "KhaledAlQahtani",
+          qdcId: 18,
+          name: "خالد القحطاني",
+          flag: "🇸🇦",
+          country: "السعودية",
+        },
+        {
+          folder: "Ali_Hajjaj_Al-Souasi_128kbps",
+          islamicId: "ar.hajjaj",
+          versesId: "Hajjaj",
+          qdcId: 19,
+          name: "علي الحذيفي",
+          flag: "🇸🇦",
+          country: "السعودية",
+        },
+        {
+          folder: "Muhammad_Ayyoub_128kbps",
+          islamicId: "ar.muhammadayyoub",
+          versesId: "MuhammadAyyoub",
+          qdcId: 20,
+          name: "محمد أيوب",
+          flag: "🇸🇦",
+          country: "السعودية",
+        },
+        {
+          folder: "Salah_Al_Budair_128kbps",
+          islamicId: "ar.budair",
+          versesId: "Budair",
+          qdcId: 21,
+          name: "صلاح البدير",
+          flag: "🇸🇦",
+          country: "السعودية",
+        },
+        {
+          folder: "Abdullah_Al-Juhany_128kbps",
+          islamicId: "ar.juhany",
+          versesId: "Juhany",
+          qdcId: 22,
+          name: "عبدالله الجهني",
+          flag: "🇸🇦",
+          country: "السعودية",
+        },
+        {
+          folder: "Yahya_Hawwa_64kbps",
+          islamicId: "ar.yahyahawwa",
+          versesId: "YahyaHawwa",
+          qdcId: 23,
+          name: "يحيى حوى",
+          flag: "🇸🇾",
+          country: "سوريا",
+        },
+        {
+          folder: "Idrees_Abkar_128kbps",
+          islamicId: "ar.idreesabkar",
+          versesId: "IdreesAbkar",
+          qdcId: 24,
+          name: "إدريس أبكر",
+          flag: "🇸🇦",
+          country: "السعودية",
+        },
+        {
+          folder: "Abdullah_Al-Matrood_128kbps",
+          islamicId: "ar.matrood",
+          versesId: "Matrood",
+          qdcId: 25,
+          name: "عبدالله المطرود",
+          flag: "🇸🇦",
+          country: "السعودية",
+        },
+
+        {
+          folder: "Bandar_Baleela_128kbps",
+          islamicId: "ar.bandar",
+          versesId: "BandarBaleela",
+          qdcId: 26,
+          name: "بندر بليلة",
+          flag: "🇸🇦",
+          country: "السعودية",
+        },
+        {
+          folder: "Khalifa_Al-Tunaiji_64kbps",
+          islamicId: "ar.tunaiji",
+          versesId: "Tunaiji",
+          qdcId: 27,
+          name: "خليفة الطنيجي",
+          flag: "🇦🇪",
+          country: "الإمارات",
+        },
+        {
+          folder: "Ahmad_Al-Hudhaify_128kbps",
+          islamicId: "ar.hudhaify",
+          versesId: "Hudhaify",
+          qdcId: 28,
+          name: "أحمد الحذيفي",
+          flag: "🇸🇦",
+          country: "السعودية",
+        },
+        {
+          folder: "Ibrahim_Akhdar_32kbps",
+          islamicId: "ar.akhdar",
+          versesId: "Akhdar",
+          qdcId: 29,
+          name: "إبراهيم الأخضر",
+          flag: "🇸🇦",
+          country: "السعودية",
+        },
+        {
+          folder: "Abdullah_Awad_Al-Juhani_128kbps",
+          islamicId: "ar.abdullahawad",
+          versesId: "AbdullahAwad",
+          qdcId: 30,
+          name: "عبدالله عواد الجهني",
+          flag: "🇸🇦",
+          country: "السعودية",
+        },
+        {
+          folder: "AbdulRahman_Al-Ausi_128kbps",
+          islamicId: "ar.ausi",
+          versesId: "Ausi",
+          qdcId: 31,
+          name: "عبدالرحمن العوسي",
+          flag: "🇸🇦",
+          country: "السعودية",
+        },
+        {
+          folder: "Mohamed_Jibreel_128kbps",
+          islamicId: "ar.jibreel",
+          versesId: "Jibreel",
+          qdcId: 32,
+          name: "محمد جبريل",
+          flag: "🇪🇬",
+          country: "مصر",
+        },
+        {
+          folder: "Tawfeeq_As-Sayegh_128kbps",
+          islamicId: "ar.tawfeeq",
+          versesId: "Tawfeeq",
+          qdcId: 33,
+          name: "توفيق الصايغ",
+          flag: "🇸🇦",
+          country: "السعودية",
+        },
+        {
+          folder: "Ahmed_Neana_128kbps",
+          islamicId: "ar.neana",
+          versesId: "Neana",
+          qdcId: 34,
+          name: "أحمد نعينع",
+          flag: "🇪🇬",
+          country: "مصر",
+        },
+        {
+          folder: "Abdulaziz_Al-Ahmad_128kbps",
+          islamicId: "ar.abdulazizalahmad",
+          versesId: "AbdulazizAlAhmad",
+          qdcId: 35,
+          name: "عبدالعزيز الأحمد",
+          flag: "🇸🇦",
+          country: "السعودية",
+        },
+        {
+          folder: "Hatem_Farid_128kbps",
+          islamicId: "ar.hatemfarid",
+          versesId: "HatemFarid",
+          qdcId: 36,
+          name: "حاتم فريد",
+          flag: "🇪🇬",
+          country: "مصر",
+        },
+        {
+          folder: "Adel_Al-Kalbani_128kbps",
+          islamicId: "ar.adelkalbani",
+          versesId: "AdelKalbani",
+          qdcId: 37,
+          name: "عادل الكلباني",
+          flag: "🇸🇦",
+          country: "السعودية",
+        },
+
+        {
+          folder: "Mahmoud_Ali_Al-Banna_128kbps",
+          islamicId: "ar.banna",
+          versesId: "Banna",
+          qdcId: 39,
+          name: "محمود علي البنا",
+          flag: "🇪🇬",
+          country: "مصر",
+        },
+        {
+          folder: "Mustafa_Ismail_128kbps",
+          islamicId: "ar.mustafaismail",
+          versesId: "MustafaIsmail",
+          qdcId: 40,
+          name: "مصطفى إسماعيل",
+          flag: "🇪🇬",
+          country: "مصر",
         },
       ];
 
@@ -13990,8 +14488,15 @@ If you want to offset all timestamps of a track such that the first one is zero,
           clr = S.color || "#fff";
 
         // ── تحديث ترجمة المقطع الحالي ──
-        if (window._translationEnabled && window._chunkTranslations && window._chunkTranslations.length > currentChunkIdx) {
-          var _ct = window._chunkTranslations[currentChunkIdx] || window._fullEnTranslation || "";
+        if (
+          window._translationEnabled &&
+          window._chunkTranslations &&
+          window._chunkTranslations.length > currentChunkIdx
+        ) {
+          var _ct =
+            window._chunkTranslations[currentChunkIdx] ||
+            window._fullEnTranslation ||
+            "";
           window._lastTranslationText = _ct;
           CSTATE.translation = _ct;
           // تحديث عنصر المعاينة
@@ -15355,9 +15860,11 @@ If you want to offset all timestamps of a track such that the first one is zero,
         QUALITY_PRESETS._active = { w, h, fps: fps, bitrate: br * 1_000_000 };
         // تحديث الـ hidden selects للتوافق مع الكود القديم
         const squal = document.getElementById("s-qual");
-        const sfps  = document.getElementById("s-fps");
-        if (squal) squal.innerHTML = `<option value="${Math.round(br*1_000_000)}" selected>${br} Mbps</option>`;
-        if (sfps)  sfps.innerHTML  = `<option value="${fps}" selected>${fps}</option>`;
+        const sfps = document.getElementById("s-fps");
+        if (squal)
+          squal.innerHTML = `<option value="${Math.round(br * 1_000_000)}" selected>${br} Mbps</option>`;
+        if (sfps)
+          sfps.innerHTML = `<option value="${fps}" selected>${fps}</option>`;
         // تحديث tag الـ preset trigger
         const tag = document.getElementById("presetTriggerTag");
         if (tag) tag.textContent = `${w}×${h} · ${fps}fps · ${br}Mbps`;
@@ -15369,7 +15876,7 @@ If you want to offset all timestamps of a track such that the first one is zero,
       }
 
       // اختصار سريع لضبط الـ custom preset
-      window._setCustomQuick = function(w, h, fps, br) {
+      window._setCustomQuick = function (w, h, fps, br) {
         const wEl = document.getElementById("cpW"),
           hEl = document.getElementById("cpH"),
           fEl = document.getElementById("cpFps"),
@@ -15379,7 +15886,8 @@ If you want to offset all timestamps of a track such that the first one is zero,
         if (fEl) fEl.value = fps;
         if (bEl) bEl.value = br;
         updateCustomPreset();
-        if (typeof toast$ === "function") toast$("✓ " + w + "×" + h + " · " + fps + "fps · " + br + "Mbps");
+        if (typeof toast$ === "function")
+          toast$("✓ " + w + "×" + h + " · " + fps + "fps · " + br + "Mbps");
       };
 
       // ── بناء قائمة الـ presets ──
@@ -16479,9 +16987,10 @@ If you want to offset all timestamps of a track such that the first one is zero,
         if (ct) {
           var remaining = MAS.chunks.length - MAS.chunkIdx;
           // احسب الوقت المتبقي من آخر مقطع مكتمل
-          var lastDone = MAS.chunkIdx > 0 && ct[MAS.chunkIdx - 1]
-            ? ct[MAS.chunkIdx - 1].end
-            : base;
+          var lastDone =
+            MAS.chunkIdx > 0 && ct[MAS.chunkIdx - 1]
+              ? ct[MAS.chunkIdx - 1].end
+              : base;
           var step = remaining > 0 ? (ayahEnd - lastDone) / remaining : 0;
           for (var c = MAS.chunkIdx; c < MAS.chunks.length; c++) {
             var chStart = lastDone + (c - MAS.chunkIdx) * step;
@@ -17766,10 +18275,13 @@ If you want to offset all timestamps of a track such that the first one is zero,
         /* ── طلب VAPID public key من السيرفر ── */
         function urlB64ToUint8Array(base64String) {
           var padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-          var base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+          var base64 = (base64String + padding)
+            .replace(/-/g, "+")
+            .replace(/_/g, "/");
           var rawData = atob(base64);
           var arr = new Uint8Array(rawData.length);
-          for (var i = 0; i < rawData.length; i++) arr[i] = rawData.charCodeAt(i);
+          for (var i = 0; i < rawData.length; i++)
+            arr[i] = rawData.charCodeAt(i);
           return arr;
         }
 
@@ -17779,7 +18291,9 @@ If you want to offset all timestamps of a track such that the first one is zero,
             if (!r.ok) return null;
             var d = await r.json();
             return d.key || null;
-          } catch (_) { return null; }
+          } catch (_) {
+            return null;
+          }
         }
 
         async function subscribeUser(reg) {
@@ -17806,7 +18320,11 @@ If you want to offset all timestamps of a track such that the first one is zero,
           try {
             /* تحقق أن الاشتراك لا يزال نشطاً */
             var existing = await reg.pushManager.getSubscription();
-            if (!existing) { localStorage.removeItem("pushSubscribed"); localStorage.removeItem("pushEndpoint"); return; }
+            if (!existing) {
+              localStorage.removeItem("pushSubscribed");
+              localStorage.removeItem("pushEndpoint");
+              return;
+            }
             await fetch(API_BASE + "/push/visit", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -17819,7 +18337,9 @@ If you want to offset all timestamps of a track such that the first one is zero,
           return Promise.race([
             navigator.serviceWorker.ready,
             new Promise(function (_, reject) {
-              setTimeout(function () { reject(new Error("SW timeout")); }, timeoutMs);
+              setTimeout(function () {
+                reject(new Error("SW timeout"));
+              }, timeoutMs);
             }),
           ]);
         }
@@ -17829,7 +18349,11 @@ If you want to offset all timestamps of a track such that the first one is zero,
           if (!("serviceWorker" in navigator)) return;
           if (!("PushManager" in window)) return;
           if (!("Notification" in window)) return;
-          if (location.protocol !== "https:" && location.hostname !== "localhost") return;
+          if (
+            location.protocol !== "https:" &&
+            location.hostname !== "localhost"
+          )
+            return;
 
           var reg;
           try {
@@ -17877,25 +18401,89 @@ If you want to offset all timestamps of a track such that the first one is zero,
       ══════════════════════════════════════════ */
         var GALLERY_IMAGES = [
           // طبيعة
-          { cat: "nature", url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80", label: "جبال" },
-          { cat: "nature", url: "https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=400&q=80", label: "شلال" },
-          { cat: "nature", url: "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=400&q=80", label: "غروب" },
-          { cat: "nature", url: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=400&q=80", label: "بحيرة" },
-          { cat: "nature", url: "https://images.unsplash.com/photo-1518173946687-a4c8892bbd9f?w=400&q=80", label: "صحراء" },
-          { cat: "nature", url: "https://images.unsplash.com/photo-1559827291-72ee739d0d9a?w=400&q=80", label: "بحر" },
+          {
+            cat: "nature",
+            url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80",
+            label: "",
+          },
+          {
+            cat: "nature",
+            url: "https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=400&q=80",
+            label: "",
+          },
+          {
+            cat: "nature",
+            url: "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=400&q=80",
+            label: "",
+          },
+          {
+            cat: "nature",
+            url: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=400&q=80",
+            label: "",
+          },
+          {
+            cat: "nature",
+            url: "https://images.unsplash.com/photo-1518173946687-a4c8892bbd9f?w=400&q=80",
+            label: "",
+          },
+          {
+            cat: "nature",
+            url: "https://images.unsplash.com/photo-1559827291-72ee739d0d9a?w=400&q=80",
+            label: "",
+          },
           // مساجد
-          { cat: "mosque", url: "https://images.unsplash.com/photo-1519817650390-64a93db51149?w=400&q=80", label: "مسجد" },
-          { cat: "mosque", url: "https://images.unsplash.com/photo-1592326871020-04f58c1a52f3?w=400&q=80", label: "مئذنة" },
-          { cat: "mosque", url: "https://images.unsplash.com/photo-1554110838-816383ce7956?w=400&q=80", label: "قبة" },
-          { cat: "mosque", url: "https://images.unsplash.com/photo-1581141444721-0e6f8fa8397e?w=400&q=80", label: "حرم" },
+          {
+            cat: "mosque",
+            url: "https://images.unsplash.com/photo-1519817650390-64a93db51149?w=400&q=80",
+            label: "",
+          },
+          {
+            cat: "mosque",
+            url: "https://images.unsplash.com/photo-1592326871020-04f58c1a52f3?w=400&q=80",
+            label: "",
+          },
+          {
+            cat: "mosque",
+            url: "https://images.unsplash.com/photo-1554110838-816383ce7956?w=400&q=80",
+            label: "",
+          },
+          {
+            cat: "mosque",
+            url: "https://images.unsplash.com/photo-1581141444721-0e6f8fa8397e?w=400&q=80",
+            label: "",
+          },
           // تجريدي
-          { cat: "abstract", url: "https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=400&q=80", label: "ضوء" },
-          { cat: "abstract", url: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=400&q=80", label: "تدرج" },
-          { cat: "abstract", url: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=400&q=80", label: "غابة" },
-          { cat: "abstract", url: "https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?w=400&q=80", label: "ليلي" },
+          {
+            cat: "abstract",
+            url: "https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=400&q=80",
+            label: "",
+          },
+          {
+            cat: "abstract",
+            url: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=400&q=80",
+            label: "",
+          },
+          {
+            cat: "abstract",
+            url: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=400&q=80",
+            label: "",
+          },
+          {
+            cat: "abstract",
+            url: "https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?w=400&q=80",
+            label: "",
+          },
           // خط عربي
-          { cat: "calligraphy", url: "https://images.unsplash.com/photo-1558114965-eeb97aa84c3b?w=400&q=80", label: "خط" },
-          { cat: "calligraphy", url: "https://images.unsplash.com/photo-1551893478-d726eaf0442c?w=400&q=80", label: "زخرفة" },
+          {
+            cat: "calligraphy",
+            url: "https://images.unsplash.com/photo-1558114965-eeb97aa84c3b?w=400&q=80",
+            label: "",
+          },
+          {
+            cat: "calligraphy",
+            url: "https://images.unsplash.com/photo-1551893478-d726eaf0442c?w=400&q=80",
+            label: "",
+          },
         ];
 
         var _currentGalleryFilter = "all";
@@ -18099,24 +18687,31 @@ If you want to offset all timestamps of a track such that the first one is zero,
             // إعادة بناء _chunkTranslations بناءً على النص الكامل الجديد
             if (window.verseChunks && window.verseChunks.length > 1 && txt) {
               var enWords = txt.trim().split(/\s+/).filter(Boolean);
-              var totalAr = window.verseChunks.reduce(function(s,c){return s+c.words.length;},0);
+              var totalAr = window.verseChunks.reduce(function (s, c) {
+                return s + c.words.length;
+              }, 0);
               var enIdx2 = 0;
-              window._chunkTranslations = window.verseChunks.map(function(ch, ci){
-                var ratio = ch.words.length / totalAr;
-                var count = (ci === window.verseChunks.length-1)
-                  ? enWords.length - enIdx2
-                  : Math.round(ratio * enWords.length);
-                count = Math.max(1, count);
-                var slice = enWords.slice(enIdx2, enIdx2+count).join(" ");
-                enIdx2 = Math.min(enIdx2+count, enWords.length);
-                return slice;
-              });
+              window._chunkTranslations = window.verseChunks.map(
+                function (ch, ci) {
+                  var ratio = ch.words.length / totalAr;
+                  var count =
+                    ci === window.verseChunks.length - 1
+                      ? enWords.length - enIdx2
+                      : Math.round(ratio * enWords.length);
+                  count = Math.max(1, count);
+                  var slice = enWords.slice(enIdx2, enIdx2 + count).join(" ");
+                  enIdx2 = Math.min(enIdx2 + count, enWords.length);
+                  return slice;
+                },
+              );
             } else {
               window._chunkTranslations = null;
             }
             var curEl = document.getElementById("vTranslation");
-            var dispTxt = (window._chunkTranslations && window._chunkTranslations[window.currentChunkIdx || 0])
-              || txt;
+            var dispTxt =
+              (window._chunkTranslations &&
+                window._chunkTranslations[window.currentChunkIdx || 0]) ||
+              txt;
             if (curEl && _translationEnabled) curEl.textContent = dispTxt;
             if (typeof markCstateDirty === "function") markCstateDirty();
           }
@@ -18334,8 +18929,6 @@ If you want to offset all timestamps of a track such that the first one is zero,
         window._verseWordList = window._verseWordList || null;
 
         /* Palette + User Presets — محذوفان */
-
-
 
         /* ══════════════════════════════════════════
          7. تصدير دفعي Batch Export — نسخة محسّنة
@@ -19042,7 +19635,6 @@ If you want to offset all timestamps of a track such that the first one is zero,
           .addEventListener("click", function (e) {
             if (e.target === this) closeAiModal();
           });
-
       })();
     </script>
 
@@ -19113,6 +19705,476 @@ If you want to offset all timestamps of a track such that the first one is zero,
           e.preventDefault();
         });
       })();
+    </script>
+
+    <!-- ======= نظام الإبلاغ عن مشكلة ======= -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script>emailjs.init('kllG1Ekoli5SxH7So');</script>
+
+    <style>
+      /* ── زر عائم ── */
+      #reportBtn {
+        position: fixed;
+        bottom: 80px;
+        left: 18px;
+        z-index: 9999;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #b8860b, #c9973a);
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 18px rgba(201,151,58,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        transition: transform .2s, box-shadow .2s;
+        color: #fff;
+      }
+      #reportBtn:hover { transform: scale(1.12); box-shadow: 0 6px 24px rgba(201,151,58,0.7); }
+
+      /* ── خلفية شفافة ── */
+      #reportOverlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        background: rgba(0,0,0,0.55);
+        backdrop-filter: blur(3px);
+        align-items: flex-end;
+        justify-content: center;
+        padding-bottom: 0;
+      }
+      #reportOverlay.open { display: flex; }
+
+      /* ── النافذة الرئيسية ── */
+      #reportPanel {
+        width: min(460px, 100vw);
+        max-height: 92vh;
+        background: #12121f;
+        border-radius: 22px 22px 0 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        font-family: 'Cairo', sans-serif;
+        direction: rtl;
+        animation: slideUpPanel .3s cubic-bezier(.25,.8,.25,1);
+      }
+      @keyframes slideUpPanel {
+        from { transform: translateY(100%); opacity: 0; }
+        to   { transform: translateY(0);    opacity: 1; }
+      }
+
+      /* ── رأس النافذة ── */
+      #reportHeader {
+        padding: 18px 20px 14px;
+        border-bottom: 1px solid rgba(255,255,255,0.07);
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-shrink: 0;
+      }
+      #reportHeader .rh-icon {
+        width: 38px; height: 38px;
+        background: rgba(201,151,58,0.15);
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px;
+        margin-left: 12px;
+        flex-shrink: 0;
+      }
+      #reportHeader .rh-text h3 {
+        margin: 0 0 3px;
+        color: #f0ebe1;
+        font-size: 15px;
+        font-weight: 700;
+      }
+      #reportHeader .rh-text p {
+        margin: 0;
+        color: #7a8a7a;
+        font-size: 11px;
+        line-height: 1.5;
+      }
+      #reportCloseBtn {
+        background: rgba(255,255,255,0.07);
+        border: none;
+        color: #aaa;
+        width: 30px; height: 30px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 14px;
+        flex-shrink: 0;
+        transition: background .15s;
+      }
+      #reportCloseBtn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+      /* ── جسم الفورم ── */
+      #reportBody {
+        overflow-y: auto;
+        padding: 18px 20px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(201,151,58,.3) transparent;
+      }
+
+      /* ── نوع الملاحظة ── */
+      .rf-label {
+        font-size: 12px;
+        color: #8a9a8a;
+        margin-bottom: 8px;
+        display: block;
+      }
+      .rf-label span { color: #e74c3c; }
+      .rtype-group {
+        display: flex;
+        gap: 8px;
+      }
+      .rtype-btn {
+        flex: 1;
+        padding: 10px 6px;
+        border-radius: 12px;
+        border: 1.5px solid rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.04);
+        color: #8a9a8a;
+        cursor: pointer;
+        font-family: 'Cairo', sans-serif;
+        font-size: 11px;
+        text-align: center;
+        transition: .2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+      .rtype-btn .rt-icon { font-size: 18px; }
+      .rtype-btn:hover {
+        border-color: rgba(201,151,58,.4);
+        background: rgba(201,151,58,.07);
+        color: #c9973a;
+      }
+      .rtype-btn.active {
+        border-color: #c9973a;
+        background: rgba(201,151,58,.15);
+        color: #c9973a;
+        font-weight: 700;
+      }
+
+      /* ── حقول الإدخال ── */
+      .rf-input, .rf-textarea {
+        width: 100%;
+        box-sizing: border-box;
+        background: rgba(255,255,255,0.05);
+        border: 1.5px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        padding: 11px 14px;
+        color: #f0ebe1;
+        font-family: 'Cairo', sans-serif;
+        font-size: 13px;
+        outline: none;
+        direction: rtl;
+        transition: border-color .2s;
+      }
+      .rf-input:focus, .rf-textarea:focus {
+        border-color: rgba(201,151,58,.6);
+      }
+      .rf-input::placeholder, .rf-textarea::placeholder { color: rgba(240,235,225,0.3); }
+      .rf-textarea { resize: vertical; min-height: 90px; }
+
+      /* ── رفع لقطة شاشة ── */
+      #reportScreenshotArea {
+        border: 1.5px dashed rgba(255,255,255,0.12);
+        border-radius: 12px;
+        padding: 14px;
+        text-align: center;
+        cursor: pointer;
+        color: #6a7a6a;
+        font-size: 12px;
+        transition: .2s;
+        position: relative;
+      }
+      #reportScreenshotArea:hover { border-color: rgba(201,151,58,.4); color: #c9973a; }
+      #reportScreenshotArea .ss-icon { font-size: 22px; margin-bottom: 4px; }
+      #reportFileInput { display: none; }
+      #ssPreview {
+        display: none;
+        margin-top: 8px;
+        border-radius: 8px;
+        overflow: hidden;
+        position: relative;
+      }
+      #ssPreview img { width: 100%; border-radius: 8px; display: block; }
+      #ssRemove {
+        position: absolute;
+        top: 6px; left: 6px;
+        background: rgba(0,0,0,0.6);
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        width: 24px; height: 24px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      /* ── معلومات الجهاز ── */
+      .rf-device-note {
+        font-size: 10.5px;
+        color: #5a6a5a;
+        line-height: 1.6;
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+      }
+      .rf-device-note span { color: #c9973a; font-size: 13px; flex-shrink: 0; }
+
+      /* ── زر الإرسال ── */
+      #reportSubmitBtn {
+        width: 100%;
+        padding: 13px;
+        border-radius: 14px;
+        border: none;
+        background: linear-gradient(135deg, #b8860b, #c9973a);
+        color: #fff;
+        font-family: 'Cairo', sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: opacity .2s, transform .15s;
+        flex-shrink: 0;
+        margin: 0 20px 20px;
+        width: calc(100% - 40px);
+      }
+      #reportSubmitBtn:hover { opacity: .88; transform: translateY(-1px); }
+      #reportSubmitBtn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+      /* ── شاشة النجاح ── */
+      #reportSuccess {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 24px;
+        gap: 12px;
+        text-align: center;
+      }
+      #reportSuccess .rs-anim { font-size: 52px; animation: popIn .4s ease; }
+      @keyframes popIn { from{transform:scale(0)} to{transform:scale(1)} }
+      #reportSuccess h3 { margin: 0; color: #f0ebe1; font-size: 16px; }
+      #reportSuccess p  { margin: 0; color: #7a8a7a; font-size: 12px; line-height: 1.7; }
+      #reportSuccessClose {
+        margin-top: 10px;
+        background: linear-gradient(135deg, #b8860b, #c9973a);
+        border: none;
+        color: #fff;
+        font-family: 'Cairo', sans-serif;
+        font-size: 13px;
+        padding: 10px 28px;
+        border-radius: 20px;
+        cursor: pointer;
+      }
+    </style>
+
+    <!-- زر عائم -->
+    <button id="reportBtn" onclick="openReportPanel()" title="تواصل معنا">💬</button>
+
+    <!-- خلفية + نافذة -->
+    <div id="reportOverlay" onclick="overlayClickReport(event)">
+      <div id="reportPanel">
+
+        <!-- الرأس -->
+        <div id="reportHeader">
+          <div style="display:flex;align-items:flex-start;flex:1">
+            <div class="rh-icon">💬</div>
+            <div class="rh-text">
+              <h3>تواصل معنا</h3>
+              <p>أخبرنا بملاحظاتك أو المشاكل التي واجهتها وسنعمل على حلها</p>
+            </div>
+          </div>
+          <button id="reportCloseBtn" onclick="closeReportPanel()">✕</button>
+        </div>
+
+        <!-- الفورم -->
+        <div id="reportBody">
+
+          <!-- نوع الملاحظة -->
+          <div>
+            <label class="rf-label">نوع الملاحظة <span>*</span></label>
+            <div class="rtype-group">
+              <button class="rtype-btn" data-type="خطأ تقني" onclick="selectRType(this)">
+                <span class="rt-icon">🐛</span>خطأ تقني
+              </button>
+              <button class="rtype-btn" data-type="اقتراح" onclick="selectRType(this)">
+                <span class="rt-icon">💡</span>اقتراح
+              </button>
+              <button class="rtype-btn" data-type="سؤال" onclick="selectRType(this)">
+                <span class="rt-icon">❓</span>سؤال
+              </button>
+            </div>
+          </div>
+
+          <!-- العنوان -->
+          <div>
+            <label class="rf-label">العنوان <span>*</span></label>
+            <input id="reportTitle" class="rf-input" type="text" placeholder="مثلاً: الخطأ لا يظهر في الفيديو المصدّر" />
+          </div>
+
+          <!-- التفاصيل -->
+          <div>
+            <label class="rf-label">التفاصيل <span>*</span></label>
+            <textarea id="reportDetails" class="rf-textarea" placeholder="اشرح المشكلة أو الاقتراح بالتفصيل... كلما كان الوصف دقيقاً، كلما تمكنا من مساعدتك بشكل أفضل."></textarea>
+          </div>
+
+          <!-- البريد الإلكتروني -->
+          <div>
+            <label class="rf-label">بريدك الإلكتروني (اختياري - للرد عليك)</label>
+            <input id="reportEmail" class="rf-input" type="email" placeholder="example@email.com" />
+          </div>
+
+          <!-- لقطة شاشة -->
+          <div>
+            <label class="rf-label">لقطة شاشة (اختياري)</label>
+            <div id="reportScreenshotArea" onclick="document.getElementById('reportFileInput').click()">
+              <div class="ss-icon">🖼</div>
+              <div>انقر لرفع لقطة شاشة</div>
+              <input id="reportFileInput" type="file" accept="image/*" onchange="handleSSUpload(event)" />
+            </div>
+            <div id="ssPreview">
+              <img id="ssImg" src="" alt="لقطة الشاشة" />
+              <button id="ssRemove" onclick="removeScreenshot()">✕</button>
+            </div>
+          </div>
+
+          <!-- معلومات الجهاز -->
+          <div class="rf-device-note">
+            <span>ℹ</span>
+            <span>سيتم إرسال معلومات النظام (المتصفح، الجهاز) تلقائياً لمساعدتنا في تشخيص المشكلة بشكل أسرع.</span>
+          </div>
+
+        </div>
+
+        <!-- زر الإرسال -->
+        <button id="reportSubmitBtn" onclick="submitReportForm()">
+          <span>📨</span> إرسال الملاحظة
+        </button>
+
+        <!-- شاشة النجاح -->
+        <div id="reportSuccess">
+          <div class="rs-anim">✅</div>
+          <h3>تم الإرسال بنجاح!</h3>
+          <p>شكراً لك على تواصلك معنا.<br>سيقوم فريقنا بمراجعة ملاحظتك في أقرب وقت.</p>
+          <button id="reportSuccessClose" onclick="closeReportPanel()">إغلاق</button>
+        </div>
+
+      </div>
+    </div>
+
+    <script>
+    (function(){
+      var selectedType = '';
+      var ssBase64 = '';
+
+      window.openReportPanel = function(){
+        document.getElementById('reportOverlay').classList.add('open');
+      };
+      window.closeReportPanel = function(){
+        document.getElementById('reportOverlay').classList.remove('open');
+        // إعادة ضبط بعد إغلاق
+        setTimeout(resetReportForm, 400);
+      };
+      window.overlayClickReport = function(e){
+        if(e.target === document.getElementById('reportOverlay')) closeReportPanel();
+      };
+
+      window.selectRType = function(btn){
+        document.querySelectorAll('.rtype-btn').forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        selectedType = btn.getAttribute('data-type');
+      };
+
+      window.handleSSUpload = function(e){
+        var file = e.target.files[0];
+        if(!file) return;
+        var reader = new FileReader();
+        reader.onload = function(ev){
+          ssBase64 = ev.target.result;
+          document.getElementById('ssImg').src = ssBase64;
+          document.getElementById('ssPreview').style.display = 'block';
+          document.getElementById('reportScreenshotArea').style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+      };
+
+      window.removeScreenshot = function(){
+        ssBase64 = '';
+        document.getElementById('ssImg').src = '';
+        document.getElementById('ssPreview').style.display = 'none';
+        document.getElementById('reportScreenshotArea').style.display = 'block';
+        document.getElementById('reportFileInput').value = '';
+      };
+
+      window.submitReportForm = function(){
+        var title   = (document.getElementById('reportTitle').value || '').trim();
+        var details = (document.getElementById('reportDetails').value || '').trim();
+        var email   = (document.getElementById('reportEmail').value || '').trim();
+
+        if(!selectedType){ alert('من فضلك اختر نوع الملاحظة'); return; }
+        if(!title)        { alert('من فضلك اكتب عنوان المشكلة'); return; }
+        if(!details)      { alert('من فضلك اكتب تفاصيل المشكلة'); return; }
+
+        var btn = document.getElementById('reportSubmitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '⏳ جاري الإرسال...';
+
+        var deviceInfo = [
+          'المتصفح: ' + navigator.userAgent.substring(0,120),
+          'الصفحة: ' + location.href,
+          'الوقت: ' + new Date().toLocaleString('ar-EG'),
+          'الشاشة: ' + screen.width + 'x' + screen.height
+        ].join('\n');
+
+        var templateParams = {
+          report_type:    selectedType,
+          report_title:   title,
+          report_details: details,
+          user_email:     email || 'لم يُذكر',
+          device_info:    deviceInfo,
+          screenshot_url: ssBase64 ? '[تم رفع لقطة شاشة]' : 'لا يوجد'
+        };
+
+        emailjs.send('service_dvil5es', 'template_33bim5n', templateParams)
+          .then(function(){
+            document.getElementById('reportBody').style.display = 'none';
+            btn.style.display = 'none';
+            document.getElementById('reportSuccess').style.display = 'flex';
+          })
+          .catch(function(err){
+            btn.disabled = false;
+            btn.innerHTML = '<span>📨</span> إرسال الملاحظة';
+            alert('حدث خطأ في الإرسال، يرجى المحاولة مرة أخرى.\n' + JSON.stringify(err));
+          });
+      };
+
+      function resetReportForm(){
+        selectedType = '';
+        ssBase64 = '';
+        document.querySelectorAll('.rtype-btn').forEach(function(b){ b.classList.remove('active'); });
+        ['reportTitle','reportDetails','reportEmail'].forEach(function(id){
+          var el = document.getElementById(id); if(el) el.value = '';
+        });
+        removeScreenshot();
+        document.getElementById('reportBody').style.display = 'flex';
+        document.getElementById('reportSubmitBtn').style.display = 'flex';
+        document.getElementById('reportSubmitBtn').disabled = false;
+        document.getElementById('reportSubmitBtn').innerHTML = '<span>📨</span> إرسال الملاحظة';
+        document.getElementById('reportSuccess').style.display = 'none';
+      }
+    })();
     </script>
   </body>
 </html>
